@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_vendedor_menu.html" import vmenu %}
+{% block title %}Dashboard — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+
+  <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+    <div>
+      <h1 class="font-display text-2xl font-extrabold text-ink-900">Mi Tienda</h1>
+      <p class="text-neutral-500 text-sm mt-1">{{ sp.company_name or 'Mi tienda' }} · Mar del Plata</p>
+    </div>
+    <a href="/mi-cuenta/nuevo" class="btn-primary px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center gap-2">{{ icon('package','w-4 h-4') }} Publicar repuesto</a>
+  </div>
+
+  {{ vmenu('dashboard') }}
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    {% for label, val, ic in [
+      ('Repuestos activos', stats.prods or 0, 'wrench'),
+      ('Total visitas', stats.views or 0, 'eye'),
+      ('Consultas recibidas', stats.leads or 0, 'message'),
+      ('Tasa de respuesta', (sp.response_rate|string + '%') if sp else '—', 'zap'),
+    ] %}
+    <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">{{ icon(ic,'w-5 h-5') }}</span>
+        <span class="text-xs text-neutral-400 font-medium text-right">{{ label }}</span>
+      </div>
+      <p class="font-display text-3xl font-extrabold text-ink-900">{{ val }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+
+    <!-- Últimas consultas -->
+    <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-bold text-ink-900">Últimas consultas</h2>
+        <a href="/mi-cuenta/leads" class="text-sm text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1">Ver todas {{ icon('arrow-right','w-4 h-4') }}</a>
+      </div>
+      {% if leads %}
+      <div class="space-y-3">
+        {% for l in leads %}
+        <div class="flex items-start gap-3 p-3 bg-neutral-50 rounded-xl">
+          <div class="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-sm font-bold text-red-700 flex-shrink-0">{{ l.buyer_name[0] if l.buyer_name else '?' }}</div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-ink-900 truncate">{{ l.buyer_name or 'Anónimo' }}</p>
+            <p class="text-xs text-neutral-500 truncate">{{ l.prod_title }}</p>
+            {% if l.message %}<p class="text-xs text-ink-700 mt-1 line-clamp-1">{{ l.message }}</p>{% endif %}
+          </div>
+          <span class="text-[10px] text-neutral-400 flex-shrink-0">{{ l.created_at[:10] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-8 text-neutral-400">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-neutral-100 flex items-center justify-center">{{ icon('message','w-6 h-6') }}</div>
+        <p class="text-sm">Aún no tenés consultas</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Últimos productos -->
+    <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="font-bold text-ink-900">Mis repuestos</h2>
+        <a href="/mi-cuenta/productos" class="text-sm text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1">Ver todos {{ icon('arrow-right','w-4 h-4') }}</a>
+      </div>
+      {% if products %}
+      <div class="space-y-3">
+        {% for p in products %}
+        <div class="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+          <img src="{{ p.image_url }}" alt="{{ p.title }}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-ink-900 truncate">{{ p.title }}</p>
+            <p class="text-xs text-red-600 font-medium">{{ p.price | ars }}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs text-neutral-500">{{ p.views }} vis.</p>
+            <span class="text-[10px] {% if p.status == 'ACTIVO' %}text-emerald-600{% else %}text-neutral-400{% endif %}">{{ p.status }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-8 text-neutral-400">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-xl bg-neutral-100 flex items-center justify-center">{{ icon('wrench','w-6 h-6') }}</div>
+        <p class="text-sm mb-3">Aún no publicaste repuestos</p>
+        <a href="/mi-cuenta/nuevo" class="btn-primary px-4 py-2 rounded-xl text-sm font-medium">Publicar primero</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

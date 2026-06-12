@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ prod.title }} — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+
+  <!-- Breadcrumb -->
+  <nav class="text-sm text-neutral-500 mb-6 flex items-center gap-1.5 flex-wrap" aria-label="Migas">
+    <a href="/" class="hover:text-red-600">Inicio</a>{{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}
+    {% if prod.parent_cat_name %}<a href="/productos?categoria={{ prod.parent_cat_slug }}" class="hover:text-red-600">{{ prod.parent_cat_name }}</a>{{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}{% endif %}
+    <a href="/productos?categoria={{ prod.cat_slug }}" class="hover:text-red-600">{{ prod.cat_name }}</a>{{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}
+    <span class="text-ink-800 truncate max-w-xs">{{ prod.title }}</span>
+  </nav>
+
+  <div class="grid lg:grid-cols-12 gap-8">
+
+    <!-- IMÁGENES -->
+    <div class="lg:col-span-5">
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+        <img id="mainImg" src="{{ prod.images_list[0] if prod.images_list else prod.image_url }}" alt="{{ prod.title }}" class="w-full aspect-square object-cover">
+      </div>
+      {% if prod.images_list|length > 1 %}
+      <div class="flex gap-2 mt-3">
+        {% for img in prod.images_list %}
+        <img src="{{ img }}" alt="Vista {{ loop.index }} de {{ prod.title }}" onclick="document.getElementById('mainImg').src='{{ img }}'"
+             class="w-16 h-16 object-cover rounded-xl border-2 border-neutral-200 hover:border-red-500 cursor-pointer transition-all">
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- INFO -->
+    <div class="lg:col-span-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs bg-red-50 text-red-700 px-2.5 py-1 rounded-full font-medium border border-red-100">{{ prod.cat_name }}</span>
+        {% if prod.condition == 'NUEVO' %}
+        <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium border border-emerald-100 inline-flex items-center gap-1">{{ icon('check','w-3 h-3') }} Nuevo</span>
+        {% else %}
+        <span class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium border border-amber-100">Usado</span>
+        {% endif %}
+      </div>
+
+      <h1 class="font-display text-2xl font-extrabold text-ink-900 mb-1 leading-tight" style="text-wrap:balance">{{ prod.title }}</h1>
+
+      {% if prod.brand %}
+      <p class="text-sm text-neutral-500 mb-4">Marca: <span class="font-semibold text-ink-800">{{ prod.brand }}</span>{% if prod.model %} · Modelo: <span class="font-semibold text-ink-800">{{ prod.model }}</span>{% endif %}</p>
+      {% endif %}
+
+      <div class="mb-4">
+        <span class="font-display text-4xl font-extrabold text-red-600">{{ prod.price | ars }}</span>
+        <span class="text-sm text-neutral-400 ml-2">≈ {{ prod.price_usd | usd }}</span>
+      </div>
+
+      {% if prod.compat_list %}
+      <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-4">
+        <p class="text-xs font-bold text-red-800 mb-2 flex items-center gap-1.5">{{ icon('bike','w-4 h-4') }} Compatible con:</p>
+        <div class="flex flex-wrap gap-1.5">
+          {% for c in prod.compat_list %}<span class="bg-white border border-red-200 text-red-700 text-xs px-2.5 py-1 rounded-full">{{ c }}</span>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if prod.part_number %}
+      <p class="text-xs text-neutral-400 mb-4">N° de parte: <span class="font-mono text-ink-700">{{ prod.part_number }}</span></p>
+      {% endif %}
+
+      <div class="prose prose-sm text-ink-700 mb-6"><p>{{ prod.description }}</p></div>
+
+      {% if prod.tags_list %}
+      <div class="flex flex-wrap gap-1.5 mb-6">
+        {% for tag in prod.tags_list if tag %}<span class="bg-neutral-100 text-ink-700 text-xs px-2.5 py-1 rounded-full">{{ tag }}</span>{% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="flex items-center gap-4 text-sm text-neutral-500 border-t border-neutral-200 pt-4">
+        <span class="inline-flex items-center gap-1.5">{{ icon('eye','w-4 h-4') }} {{ prod.views }} vistas</span>
+        <span class="inline-flex items-center gap-1.5">{{ icon('message','w-4 h-4') }} {{ prod.leads_count }} consultas</span>
+        {% if prod.stock %}<span class="inline-flex items-center gap-1.5">{{ icon('package','w-4 h-4') }} {{ prod.stock }} en stock</span>{% endif %}
+      </div>
+    </div>
+
+    <!-- VENDEDOR -->
+    <div class="lg:col-span-3">
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5 mb-4 sticky top-24">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center flex-shrink-0">{{ icon('store','w-6 h-6') }}</div>
+          <div>
+            <p class="font-bold text-ink-900 text-sm">{{ prod.company_name }}</p>
+            {% if prod.verified %}<span class="badge-verified text-white text-[10px] px-2 py-0.5 rounded-full inline-flex items-center gap-1">{{ icon('check','w-3 h-3') }} Verificado</span>{% endif %}
+            <p class="text-xs text-neutral-500 mt-0.5">{{ prod.seller_city }}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 mb-4">
+          <div class="flex text-red-500">
+            {% for i in range(5) %}{{ icon('star-fill','w-4 h-4') if i < prod.rating|int else icon('star','w-4 h-4 text-neutral-300') }}{% endfor %}
+          </div>
+          <span class="text-sm font-semibold text-ink-800">{{ "%.1f"|format(prod.rating) }}</span>
+          <span class="text-xs text-neutral-400">({{ prod.total_reviews }} reseñas)</span>
+        </div>
+
+        <div class="space-y-2 text-xs text-neutral-500 mb-5">
+          <div class="flex items-center gap-2"><span class="text-emerald-500">{{ icon('check','w-4 h-4') }}</span> Responde {{ prod.response_time }}</div>
+          <div class="flex items-center gap-2"><span class="text-emerald-500">{{ icon('check','w-4 h-4') }}</span> Tasa de respuesta {{ prod.response_rate }}%</div>
+          {% if prod.seller_address %}<div class="flex items-start gap-2"><span class="text-red-600 mt-0.5">{{ icon('map-pin','w-4 h-4') }}</span><span>{{ prod.seller_address }}</span></div>{% endif %}
+        </div>
+
+        {% if prod.seller_whatsapp %}
+        <a href="https://wa.me/54{{ prod.seller_whatsapp }}?text=Hola! Vi el repuesto *{{ prod.title }}* en Re-Puestos MDP. ¿Está disponible?" target="_blank"
+           class="w-full flex items-center justify-center gap-2 btn-wa font-bold py-3 rounded-xl transition mb-3 text-sm">
+          {{ icon('whatsapp','w-4 h-4') }} Consultar por WhatsApp
+        </a>
+        {% endif %}
+
+        <a href="#contacto" class="w-full flex items-center justify-center gap-2 btn-primary font-bold py-3 rounded-xl transition-colors text-sm">{{ icon('mail','w-4 h-4') }} Enviar consulta</a>
+        <a href="/vendedor/{{ prod.seller_uid }}" class="w-full flex items-center justify-center gap-2 mt-2 border border-neutral-200 hover:border-red-300 text-ink-800 hover:text-red-700 font-medium py-2.5 rounded-xl transition-colors text-sm">
+          {{ icon('store','w-4 h-4') }} Ver más de esta tienda
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CONTACTO -->
+  <div id="contacto" class="mt-10 max-w-xl">
+    <h2 class="font-display text-xl font-bold text-ink-900 mb-4">Hacer una consulta</h2>
+    <form action="/producto/{{ prod.slug }}" method="post" class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-4">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1">Nombre *</label>
+          <input name="buyer_name" required placeholder="Tu nombre" class="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1">Teléfono</label>
+          <input name="buyer_phone" placeholder="0223 …" class="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1">Email *</label>
+        <input name="buyer_email" type="email" required placeholder="tu@email.com" class="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1">Mensaje</label>
+        <textarea name="message" rows="3" placeholder="¿Tenés stock? ¿Hacen envíos? ¿Precio por mayor?" class="w-full px-4 py-2.5 border border-neutral-200 rounded-xl text-sm resize-none"></textarea>
+      </div>
+      <button type="submit" class="w-full btn-primary py-3 rounded-xl font-bold text-sm transition-colors">Enviar consulta al vendedor</button>
+    </form>
+  </div>
+
+  <!-- OTROS DEL VENDEDOR -->
+  {% if other_seller %}
+  <div class="mt-12">
+    <h2 class="font-display text-xl font-bold text-ink-900 mb-5">Más de {{ prod.company_name }}</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {% for p in other_seller %}
+      <a href="/producto/{{ p.slug }}" class="product-card group bg-white rounded-xl border border-neutral-200 hover:border-red-300 shadow-sm hover:shadow-md overflow-hidden">
+        <div class="aspect-square overflow-hidden bg-neutral-50"><img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img w-full h-full object-cover"></div>
+        <div class="p-3">
+          <p class="text-xs font-semibold text-ink-900 line-clamp-2 leading-tight mb-1">{{ p.title }}</p>
+          <p class="font-display text-red-600 font-bold text-sm">{{ p.price | ars }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SIMILARES -->
+  {% if similar %}
+  <div class="mt-12">
+    <h2 class="font-display text-xl font-bold text-ink-900 mb-5">Repuestos similares</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+      {% for p in similar %}
+      <a href="/producto/{{ p.slug }}" class="product-card group bg-white rounded-xl border border-neutral-200 hover:border-red-300 shadow-sm hover:shadow-md overflow-hidden">
+        <div class="aspect-square overflow-hidden bg-neutral-50"><img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img w-full h-full object-cover"></div>
+        <div class="p-3">
+          <p class="text-xs font-medium text-ink-900 line-clamp-2 leading-tight mb-1">{{ p.title }}</p>
+          <p class="font-display text-red-600 font-bold text-sm">{{ p.price | ars }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- RESEÑAS -->
+  {% if reviews %}
+  <div class="mt-12 max-w-2xl">
+    <h2 class="font-display text-xl font-bold text-ink-900 mb-5">Reseñas del vendedor</h2>
+    <div class="space-y-4">
+      {% for r in reviews %}
+      <div class="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 bg-red-50 rounded-full flex items-center justify-center text-sm font-bold text-red-700">{{ r.buyer_name[0] }}</div>
+          <div>
+            <p class="text-sm font-semibold text-ink-900">{{ r.buyer_name }}</p>
+            <div class="flex text-red-500">{% for i in range(5) %}{{ icon('star-fill','w-3 h-3') if i < r.rating else icon('star','w-3 h-3 text-neutral-300') }}{% endfor %}</div>
+          </div>
+          <span class="ml-auto text-xs text-neutral-400">{{ r.created_at[:10] }}</span>
+        </div>
+        <p class="text-sm text-ink-700">{{ r.comment }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

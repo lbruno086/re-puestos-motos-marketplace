@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+{% from "_icons.html" import icon %}
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Re-Puestos MDP — Repuestos de Motos en Mar del Plata{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}El marketplace de repuestos de motos de Mar del Plata. Encontrá pastillas, cadenas, pistones, cubiertas y más para tu moto.{% endblock %}">
+  <meta name="theme-color" content="#15171c">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            red:  { 50:'#fdeced', 100:'#fbd5d8', 200:'#f6a8af', 300:'#ef7780',
+                    400:'#ea4651', 500:'#e01b24', 600:'#e01b24', 700:'#c01018',
+                    800:'#9a0d13', 900:'#7a0c11' },
+            ink:  { 700:'#3d424b', 800:'#33373f', 900:'#23262d', 950:'#15171c' },
+            neutral: { 50:'#fafafb', 100:'#f3f4f6', 200:'#e6e7ea', 300:'#d3d5da',
+                       400:'#a9adb5', 500:'#8b8f97', 600:'#6b6f78' },
+            // alias de compatibilidad: páginas heredadas usan moto-* → ahora rojo
+            moto: { 50:'#fdeced', 100:'#fbd5d8', 200:'#f6a8af', 300:'#ef7780',
+                    400:'#ea4651', 500:'#e01b24', 600:'#e01b24', 700:'#c01018',
+                    800:'#9a0d13', 900:'#7a0c11' },
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Archivo', 'Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Archivo:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --red-600:#e01b24; --red-700:#c01018; --red-50:#fdeced;
+      --ink-950:#15171c; --ink-900:#23262d; --ink-800:#33373f;
+      --neutral-500:#8b8f97; --neutral-200:#e6e7ea; --surface:#fcfcfd;
+      --wa:#22c55e;
+    }
+    *{ font-family:'Inter', system-ui, sans-serif; }
+    .font-display{ font-family:'Archivo', Inter, sans-serif; letter-spacing:-.01em; }
+    body{ background:var(--surface); }
+    /* Ticker */
+    .ticker-wrap{ overflow:hidden; white-space:nowrap; }
+    .ticker-move{ display:inline-block; animation:ticker 55s linear infinite; }
+    .ticker-move:hover{ animation-play-state:paused; }
+    @keyframes ticker{ 0%{transform:translateX(100vw)} 100%{transform:translateX(-100%)} }
+    /* Dropdown desktop */
+    .dropdown:hover .dropdown-menu{ display:block; }
+    /* Card hover */
+    .product-card{ transition:box-shadow .2s ease, border-color .2s ease, transform .2s ease; }
+    .product-card:hover .card-img{ transform:scale(1.04); }
+    .card-img{ transition:transform .35s cubic-bezier(.22,1,.36,1); }
+    /* Form focus = anillo rojo */
+    input[type=range]{ accent-color:var(--red-600); }
+    select:focus, input:focus, textarea:focus{ box-shadow:0 0 0 2px rgba(224,27,36,.30); border-color:var(--red-600); outline:none; }
+    ::-webkit-scrollbar{ width:7px; height:7px; } ::-webkit-scrollbar-thumb{ background:#cdd0d6; border-radius:4px; }
+    .scrollbar-hide::-webkit-scrollbar{ display:none; } .scrollbar-hide{ -ms-overflow-style:none; scrollbar-width:none; }
+    /* Botones de marca */
+    .btn-primary{ background:var(--red-600); color:#fff; }
+    .btn-primary:hover{ background:var(--red-700); }
+    .btn-wa{ background:var(--wa); color:#fff; }
+    .btn-wa:hover{ filter:brightness(.93); }
+    .badge-verified{ background:var(--red-600); }
+    /* Mobile drawer */
+    #mobileNav{ transform:translateX(-100%); transition:transform .25s cubic-bezier(.22,1,.36,1); }
+    #mobileNav.open{ transform:translateX(0); }
+    #navBackdrop{ opacity:0; pointer-events:none; transition:opacity .25s ease; }
+    #navBackdrop.open{ opacity:1; pointer-events:auto; }
+    @media (prefers-reduced-motion: reduce){
+      .ticker-move{ animation:none; } .card-img{ transition:none; }
+      #mobileNav, #navBackdrop{ transition:none; }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="text-ink-800">
+
+{% if flash_msg %}
+<div id="flash" class="fixed top-4 right-4 z-[80] bg-ink-950 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium flex items-center gap-2 border border-white/10">
+  <span class="text-[var(--wa)]">{{ icon('check', 'w-4 h-4') }}</span>
+  {{ flash_msg.decode() if flash_msg is not string else flash_msg }}
+  <button onclick="this.parentElement.remove()" class="ml-2 text-white/60 hover:text-white">{{ icon('x', 'w-4 h-4') }}</button>
+</div>
+{% endif %}
+
+<!-- ══ TICKER ══ -->
+<div class="bg-ink-950 text-white/90 text-xs py-1.5 border-b border-white/5">
+  <div class="ticker-wrap">
+    <div class="ticker-move px-4">
+      {% for mp in market_prices %}
+      <span class="inline-flex items-center gap-1.5 mr-8">
+        <span class="font-semibold text-red-400">{{ mp.name }}</span>
+        <span class="text-white">{{ mp.price_ars | ars }}</span>
+        {% if mp.change_pct > 0 %}<span class="text-emerald-400 inline-flex items-center">{{ icon('trending-up','w-3 h-3 mr-0.5') }}{{ mp.change_pct }}%</span>
+        {% elif mp.change_pct < 0 %}<span class="text-red-400 inline-flex items-center">{{ icon('trending-down','w-3 h-3 mr-0.5') }}{{ mp.change_pct | abs }}%</span>
+        {% else %}<span class="text-white/40">—</span>{% endif %}
+        <span class="text-white/20">·</span>
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ══ NAVBAR (chrome oscuro) ══ -->
+<header class="bg-ink-950 text-white sticky top-0 z-50 shadow-lg shadow-black/20">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center gap-3 sm:gap-4 h-16">
+
+      <!-- Hamburguesa (mobile) -->
+      <button id="navToggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileNav"
+        class="md:hidden -ml-1 p-2 rounded-lg text-white/80 hover:bg-white/10 active:bg-white/15">
+        {{ icon('menu', 'w-6 h-6') }}
+      </button>
+
+      <a href="/" class="flex items-center gap-2 flex-shrink-0" aria-label="Re-Puestos MDP, inicio">
+        <div class="w-9 h-9 bg-red-600 rounded-lg flex items-center justify-center shadow-md shadow-red-900/40">
+          {{ icon('bike', 'w-5 h-5 text-white') }}
+        </div>
+        <div class="leading-none">
+          <span class="font-display text-xl font-extrabold text-white">RE-</span><span class="font-display text-xl font-extrabold text-red-500">PUESTOS</span>
+          <span class="hidden sm:block text-[10px] uppercase tracking-wider text-white/45 -mt-0.5">Mar del Plata</span>
+        </div>
+      </a>
+
+      <!-- Search -->
+      <form action="/buscar" method="get" class="flex-1 max-w-xl" role="search">
+        <div class="flex">
+          <label for="navSearch" class="sr-only">Buscar repuesto</label>
+          <input id="navSearch" name="q" type="text" placeholder="Buscar repuesto, marca, modelo…"
+            value="{{ search|default('', true) }}"
+            class="w-full px-4 py-2.5 text-sm text-ink-900 bg-white rounded-l-xl border border-transparent focus:border-red-600 outline-none placeholder:text-neutral-500">
+          <button type="submit" aria-label="Buscar" class="bg-red-600 hover:bg-red-700 text-white px-4 rounded-r-xl transition-colors flex items-center justify-center">
+            {{ icon('search', 'w-4 h-4', '2.5') }}
+          </button>
+        </div>
+      </form>
+
+      <nav class="hidden md:flex items-center gap-1 text-sm">
+        <a href="/tiendas" class="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white font-medium transition-colors">
+          {{ icon('map-pin', 'w-4 h-4') }} Tiendas MDP
+        </a>
+        {% if current_user %}
+          {% if current_user.role in ('VENDEDOR','ADMIN') %}
+          <a href="/mi-cuenta/dashboard" class="px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white font-medium">Mi Cuenta</a>
+          {% else %}
+          <span class="px-3 py-2 text-white/55 text-sm">{{ current_user.name.split()[0] }}</span>
+          {% endif %}
+          <a href="/auth/logout" class="px-3 py-2 rounded-lg hover:bg-white/10 text-white/55 hover:text-white">Salir</a>
+        {% else %}
+          <a href="/auth/login" class="px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 font-medium">Ingresar</a>
+          <a href="/auth/register?role=VENDEDOR" class="btn-primary px-4 py-2 rounded-xl text-sm font-semibold transition-colors ml-1">Publicar</a>
+        {% endif %}
+      </nav>
+    </div>
+
+    <!-- Category nav (desktop) -->
+    <nav class="hidden md:flex items-center gap-1 pb-2 overflow-x-auto scrollbar-hide" aria-label="Categorías">
+      <a href="/productos" class="flex-shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors">Todo</a>
+      {% for item in nav_categories %}
+      <div class="dropdown relative flex-shrink-0">
+        <a href="/productos?categoria={{ item.parent.slug }}"
+           class="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors">
+          <span>{{ item.parent.name }}</span>
+          {% if item.subs %}{{ icon('chevron-down', 'w-3 h-3 opacity-50') }}{% endif %}
+        </a>
+        {% if item.subs %}
+        <div class="dropdown-menu hidden absolute top-full left-0 mt-1 bg-white text-ink-800 border border-neutral-200 rounded-xl shadow-xl p-2 min-w-[190px] z-50">
+          {% for sub in item.subs %}
+          <a href="/productos?categoria={{ sub.slug }}" class="block px-3 py-2 text-xs text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">{{ sub.name }}</a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </nav>
+  </div>
+</header>
+
+<!-- ══ MOBILE DRAWER ══ -->
+<div id="navBackdrop" class="fixed inset-0 bg-black/50 z-[60] md:hidden"></div>
+<aside id="mobileNav" class="fixed top-0 left-0 bottom-0 w-[82%] max-w-xs bg-ink-950 text-white z-[70] md:hidden flex flex-col shadow-2xl">
+  <div class="flex items-center justify-between px-4 h-16 border-b border-white/10">
+    <span class="font-display font-extrabold text-lg">RE-<span class="text-red-500">PUESTOS</span></span>
+    <button id="navClose" aria-label="Cerrar menú" class="p-2 rounded-lg text-white/70 hover:bg-white/10">{{ icon('x', 'w-5 h-5') }}</button>
+  </div>
+  <div class="flex-1 overflow-y-auto px-3 py-4">
+    <a href="/tiendas" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('map-pin','w-5 h-5 text-red-500') }} Tiendas en MDP</a>
+    <a href="/productos" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('wrench','w-5 h-5 text-red-500') }} Todos los repuestos</a>
+    <div class="my-3 border-t border-white/10"></div>
+    <p class="px-3 pb-1 text-[11px] uppercase tracking-wider text-white/40 font-semibold">Categorías</p>
+    {% for item in nav_categories %}
+    <a href="/productos?categoria={{ item.parent.slug }}" class="block px-3 py-2 rounded-lg text-sm text-white/80 hover:bg-white/10">{{ item.parent.name }}</a>
+    {% endfor %}
+    <div class="my-3 border-t border-white/10"></div>
+    {% if current_user %}
+      {% if current_user.role in ('VENDEDOR','ADMIN') %}
+      <a href="/mi-cuenta/dashboard" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Mi Cuenta</a>
+      {% endif %}
+      <a href="/auth/logout" class="block px-3 py-2.5 rounded-lg text-white/60 hover:bg-white/10">Salir</a>
+    {% else %}
+      <a href="/auth/login" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Ingresar</a>
+      <a href="/auth/register?role=VENDEDOR" class="btn-primary block text-center mt-2 px-4 py-2.5 rounded-xl text-sm font-semibold">Publicar repuesto</a>
+    {% endif %}
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer class="bg-ink-950 text-white/55 mt-16">
+  <div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+      <div class="col-span-2 md:col-span-1">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">{{ icon('bike','w-4 h-4 text-white') }}</div>
+          <span class="text-white font-display font-extrabold text-lg">RE-PUESTOS</span>
+        </div>
+        <p class="text-sm leading-relaxed">El marketplace de repuestos de motos de Mar del Plata. Conectamos compradores con las mejores tiendas locales.</p>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-3 text-sm">Categorías</h4>
+        <ul class="space-y-1.5 text-sm">
+          {% for item in nav_categories[:5] %}
+          <li><a href="/productos?categoria={{ item.parent.slug }}" class="hover:text-red-400 transition-colors">{{ item.parent.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-3 text-sm">Marcas Populares</h4>
+        <ul class="space-y-1.5 text-sm">
+          {% for marca in ['Honda','Yamaha','Zanella','Motomel','Kawasaki'] %}
+          <li><a href="/productos?marca={{ marca }}" class="hover:text-red-400 transition-colors">{{ marca }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-white font-semibold mb-3 text-sm">Info</h4>
+        <ul class="space-y-1.5 text-sm">
+          <li><a href="/tiendas" class="flex items-center gap-1.5 hover:text-red-400 transition-colors">{{ icon('map-pin','w-3.5 h-3.5') }} Tiendas en MDP</a></li>
+          <li><a href="/auth/register" class="hover:text-red-400 transition-colors">Publicar repuesto</a></li>
+          <li><a href="/auth/login" class="hover:text-red-400 transition-colors">Ingresar</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      <span>© 2026 Re-Puestos MDP — Mar del Plata, Buenos Aires</span>
+      <span class="text-white/35">Hecho para los moteros de la costa</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var nav = document.getElementById('mobileNav'),
+        bd  = document.getElementById('navBackdrop'),
+        tg  = document.getElementById('navToggle'),
+        cl  = document.getElementById('navClose');
+    function open(){ nav.classList.add('open'); bd.classList.add('open'); tg.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
+    function close(){ nav.classList.remove('open'); bd.classList.remove('open'); tg.setAttribute('aria-expanded','false'); document.body.style.overflow=''; }
+    if(tg) tg.addEventListener('click', open);
+    if(cl) cl.addEventListener('click', close);
+    if(bd) bd.addEventListener('click', close);
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
+  })();
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

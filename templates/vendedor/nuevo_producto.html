@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Publicar Repuesto — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6 md:py-8">
+  <div class="mb-6">
+    <a href="/mi-cuenta/productos" class="text-sm text-neutral-500 hover:text-red-600 inline-flex items-center gap-1">{{ icon('chevron-right','w-4 h-4 rotate-180') }} Volver a mis repuestos</a>
+    <h1 class="font-display text-2xl font-extrabold text-ink-900 mt-2">Publicar repuesto</h1>
+  </div>
+
+  {% if error %}
+  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2"><span class="flex-shrink-0">{{ icon('x','w-4 h-4') }}</span> {{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/mi-cuenta/nuevo" class="space-y-6">
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+      <h2 class="font-bold text-ink-900 text-lg border-b border-neutral-200 pb-3">Información del repuesto</h2>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Título *</label>
+        <input name="title" required placeholder="Ej: Kit de pistón Honda Wave 110 STD"
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        <p class="text-xs text-gray-400 mt-1">Incluí la marca y modelo para mejor visibilidad</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Categoría *</label>
+          <select name="category_id" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500 bg-white">
+            {% for c in cats %}
+            {% if c.parent_id is none %}
+            <optgroup label="{{ c.name }}">
+            {% else %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Condición</label>
+          <select name="condition" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500 bg-white">
+            <option value="NUEVO">Nuevo</option>
+            <option value="USADO">Usado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Marca</label>
+          <input name="brand" list="marcas-list" placeholder="Honda, Yamaha, Universal..."
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+          <datalist id="marcas-list">
+            {% for m in MARCAS_MOTO %}<option value="{{ m }}">{% endfor %}
+          </datalist>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Modelo</label>
+          <input name="model" placeholder="Ej: Wave 110, YBR 125"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Modelos compatibles</label>
+        <input name="compatible_models" placeholder="Honda Wave 110, Honda Biz 125, ..."
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        <p class="text-xs text-gray-400 mt-1">Separados por coma. Esto mejora las búsquedas.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Descripción corta</label>
+        <input name="short_desc" maxlength="120" placeholder="Resumen en 1 línea"
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Descripción completa</label>
+        <textarea name="description" rows="4" placeholder="Detallá características, medidas, compatibilidad, estado..."
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500 resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+      <h2 class="font-bold text-ink-900 text-lg border-b border-neutral-200 pb-3">Precio y stock</h2>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Precio (ARS) *</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+            <input name="price" type="number" min="0" required placeholder="0"
+              class="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Stock</label>
+          <input name="stock" type="number" min="1" value="1"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">N° de parte</label>
+          <input name="part_number" placeholder="Ej: RP-12345"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">URL de imagen</label>
+          <input name="image_url" type="url" placeholder="https://..."
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" class="flex-1 btn-primary py-3.5 rounded-xl font-bold transition-colors">
+        Publicar repuesto
+      </button>
+      <a href="/mi-cuenta/productos" class="px-6 py-3.5 border border-gray-200 hover:border-gray-300 text-gray-600 rounded-xl font-medium text-sm transition-colors">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

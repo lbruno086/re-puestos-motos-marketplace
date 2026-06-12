@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Búsqueda: {{ q }} — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+  <div class="mb-6">
+    <h1 class="font-display text-2xl font-bold text-ink-900">Resultados para “<span class="text-red-600">{{ q }}</span>”</h1>
+    <p class="text-neutral-500 text-sm mt-1">{{ total }} repuestos encontrados</p>
+  </div>
+
+  {% if results %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    {% for p in results %}
+    <a href="/producto/{{ p.slug }}" class="product-card group bg-white rounded-2xl border border-neutral-200 hover:border-red-300 shadow-sm hover:shadow-md overflow-hidden">
+      <div class="aspect-square overflow-hidden bg-neutral-50"><img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img w-full h-full object-cover"></div>
+      <div class="p-3">
+        <p class="text-xs text-neutral-500 font-medium mb-0.5">{{ p.brand or 'Universal' }}</p>
+        <p class="text-xs font-semibold text-ink-900 line-clamp-2 leading-tight mb-1.5">{{ p.title }}</p>
+        <p class="font-display text-red-600 font-bold text-sm">{{ p.price | ars }}</p>
+        <p class="text-[10px] text-neutral-400 mt-1 truncate">{{ p.company_name }}</p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-20 max-w-md mx-auto">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">{{ icon('search','w-8 h-8','1.5') }}</div>
+    <h3 class="font-display text-xl font-bold text-ink-900 mb-2">Sin resultados para “{{ q }}”</h3>
+    <p class="text-neutral-500 mb-6">Probá con otro término o explorá el catálogo completo.</p>
+    <div class="flex flex-wrap justify-center gap-2">
+      {% for term in ['Pastillas freno','Cadena moto','Batería','Carburador','Amortiguador'] %}
+      <a href="/buscar?q={{ term }}" class="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-100 rounded-full text-sm font-medium transition-colors">{{ term }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

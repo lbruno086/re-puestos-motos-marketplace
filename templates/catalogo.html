@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ current_cat.name + ' — ' if current_cat else '' }}Catálogo — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+
+  <!-- Breadcrumb -->
+  <nav class="text-sm text-neutral-500 mb-5 flex items-center gap-2" aria-label="Migas">
+    <a href="/" class="hover:text-red-600">Inicio</a>
+    {{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}
+    <a href="/productos" class="hover:text-red-600">Repuestos</a>
+    {% if current_cat %}{{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}<span class="text-ink-900 font-medium">{{ current_cat.name }}</span>{% endif %}
+  </nav>
+
+  <div class="flex gap-7">
+
+    <!-- BACKDROP (mobile) -->
+    <div id="filtBackdrop" class="fixed inset-0 bg-black/50 z-[60] opacity-0 pointer-events-none transition-opacity lg:hidden"></div>
+
+    <!-- SIDEBAR / DRAWER -->
+    <aside id="filtPanel"
+      class="fixed inset-y-0 left-0 z-[70] w-[82%] max-w-xs -translate-x-full transition-transform duration-300 bg-neutral-50 overflow-y-auto p-4
+             lg:static lg:translate-x-0 lg:w-60 lg:flex-shrink-0 lg:z-auto lg:bg-transparent lg:overflow-visible lg:p-0">
+
+      <div class="flex items-center justify-between mb-4 lg:hidden">
+        <span class="font-display font-bold text-ink-900 text-lg">Filtros</span>
+        <button id="filtClose" aria-label="Cerrar filtros" class="p-2 rounded-lg text-neutral-500 hover:bg-neutral-200">{{ icon('x','w-5 h-5') }}</button>
+      </div>
+
+      <!-- Categorías -->
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
+        <h3 class="font-bold text-ink-900 text-sm mb-3">Categorías</h3>
+        <ul class="space-y-1">
+          <li><a href="/productos" class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if not category_slug %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}"><span>Todos</span></a></li>
+          {% for cat in all_cats %}
+          <li>
+            <a href="/productos?categoria={{ cat.slug }}"
+               class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if category_slug == cat.slug %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">
+              <span class="truncate">{{ cat.name }}</span>
+              <span class="text-xs text-neutral-400 ml-1">{{ cat.cnt }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Precio -->
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
+        <h3 class="font-bold text-ink-900 text-sm mb-3">Precio</h3>
+        <form method="get" action="/productos" class="space-y-2">
+          {% if category_slug %}<input type="hidden" name="categoria" value="{{ category_slug }}">{% endif %}
+          {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
+          {% if brand %}<input type="hidden" name="marca" value="{{ brand }}">{% endif %}
+          {% if tienda %}<input type="hidden" name="tienda" value="{{ tienda }}">{% endif %}
+          <input type="number" name="precio_min" placeholder="Mínimo $" value="{{ price_min }}" class="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg">
+          <input type="number" name="precio_max" placeholder="Máximo $" value="{{ price_max }}" class="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg">
+          <button type="submit" class="w-full btn-primary py-2 rounded-lg text-sm font-medium transition-colors">Aplicar</button>
+        </form>
+      </div>
+
+      <!-- Marca -->
+      {% if brands_available %}
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
+        <h3 class="font-bold text-ink-900 text-sm mb-3">Marca</h3>
+        <ul class="space-y-1 max-h-48 overflow-y-auto">
+          {% for b in brands_available %}
+          <li>
+            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}marca={{ b }}"
+               class="flex items-center px-2 py-1.5 rounded-lg text-sm {% if brand == b %}text-red-700 font-semibold bg-red-50{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">{{ b }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <!-- Condición -->
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
+        <h3 class="font-bold text-ink-900 text-sm mb-3">Condición</h3>
+        <ul class="space-y-1">
+          {% for cond, label in [('','Todo'),('NUEVO','Nuevo'),('USADO','Usado')] %}
+          <li>
+            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}condicion={{ cond }}"
+               class="block px-2 py-1.5 rounded-lg text-sm {% if condition == cond %}text-red-700 font-semibold bg-red-50{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">{{ label }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Tienda MDP -->
+      {% if sellers_for_filter %}
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4">
+        <h3 class="font-bold text-ink-900 text-sm mb-3 flex items-center gap-1.5">{{ icon('map-pin','w-4 h-4 text-red-600') }} Tienda MDP</h3>
+        <ul class="space-y-1">
+          <li>
+            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}{{ ('q=' + search + '&') if search else '' }}{{ ('marca=' + brand + '&') if brand else '' }}"
+               class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if not tienda %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}"><span>Todas las tiendas</span></a>
+          </li>
+          {% for s in sellers_for_filter %}
+          {% if s.cnt > 0 %}
+          <li>
+            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}{{ ('q=' + search + '&') if search else '' }}{{ ('marca=' + brand + '&') if brand else '' }}tienda={{ s.id }}"
+               class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if tienda == s.id|string %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">
+              <span class="flex items-center gap-1 truncate">
+                {% if s.verified %}<span class="text-red-600">{{ icon('check','w-3 h-3') }}</span>{% endif %}
+                <span class="truncate">{{ s.company_name }}</span>
+              </span>
+              <span class="text-xs text-neutral-400 flex-shrink-0 ml-1">{{ s.cnt }}</span>
+            </a>
+          </li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+    </aside>
+
+    <!-- MAIN -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+        <div>
+          <h1 class="font-display text-xl font-bold text-ink-900 flex items-center gap-2">
+            {% if current_cat %}{{ current_cat.name }}
+            {% elif search %}Resultados para “{{ search }}”
+            {% else %}Todos los repuestos{% endif %}
+          </h1>
+          <p class="text-sm text-neutral-500 mt-0.5">{{ total }} repuestos encontrados</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Botón filtros (mobile) -->
+          <button id="filtOpen" class="lg:hidden inline-flex items-center gap-1.5 text-sm border border-neutral-200 rounded-lg px-3 py-1.5 bg-white text-ink-800 font-medium">
+            {{ icon('sliders','w-4 h-4') }} Filtros
+          </button>
+          <label for="ordenSel" class="text-sm text-neutral-500 hidden sm:inline">Ordenar:</label>
+          <select id="ordenSel" onchange="window.location='?{{ ('categoria='+category_slug+'&') if category_slug else '' }}{{ ('q='+search+'&') if search else '' }}{{ ('tienda='+tienda+'&') if tienda else '' }}orden='+this.value"
+            class="text-sm border border-neutral-200 rounded-lg px-3 py-1.5 bg-white">
+            <option value="relevancia" {% if order=='relevancia' %}selected{% endif %}>Relevancia</option>
+            <option value="precio-asc" {% if order=='precio-asc' %}selected{% endif %}>Menor precio</option>
+            <option value="precio-desc" {% if order=='precio-desc' %}selected{% endif %}>Mayor precio</option>
+            <option value="mas-vistos" {% if order=='mas-vistos' %}selected{% endif %}>Más vistos</option>
+            <option value="recientes" {% if order=='recientes' %}selected{% endif %}>Más recientes</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filtros activos -->
+      {% if brand or condition or price_min or price_max or tienda %}
+      <div class="flex flex-wrap items-center gap-2 mb-4">
+        {% if brand %}<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 text-xs px-3 py-1.5 rounded-full font-medium border border-red-100">Marca: {{ brand }}</span>{% endif %}
+        {% if condition %}<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 text-xs px-3 py-1.5 rounded-full font-medium border border-red-100">{{ condition|capitalize }}</span>{% endif %}
+        {% if price_min or price_max %}<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 text-xs px-3 py-1.5 rounded-full font-medium border border-red-100">Precio {{ price_min or 0 }}–{{ price_max or '∞' }}</span>{% endif %}
+        <a href="/productos{{ '?categoria='+category_slug if category_slug else '' }}" class="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-red-600 px-2 py-1.5">{{ icon('x','w-3.5 h-3.5') }} Limpiar filtros</a>
+      </div>
+      {% endif %}
+
+      <!-- Grid -->
+      {% if products %}
+      <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+        {% for p in products %}
+        <a href="/producto/{{ p.slug }}" class="product-card group bg-white rounded-2xl border border-neutral-200 hover:border-red-300 shadow-sm hover:shadow-md overflow-hidden">
+          <div class="aspect-square overflow-hidden bg-neutral-50 relative">
+            <img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img w-full h-full object-cover">
+            {% if p.condition == 'USADO' %}<span class="absolute top-2 right-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-medium">Usado</span>{% endif %}
+          </div>
+          <div class="p-3">
+            <p class="text-xs text-neutral-500 font-medium mb-0.5 truncate">{{ p.brand or 'Universal' }}{% if p.model %} · {{ p.model }}{% endif %}</p>
+            <p class="text-sm font-semibold text-ink-900 line-clamp-2 leading-tight mb-2">{{ p.title }}</p>
+            <p class="font-display text-red-600 font-bold">{{ p.price | ars }}</p>
+            <p class="text-[11px] text-neutral-400 mt-1 truncate">{{ p.company_name }}</p>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Paginación -->
+      {% if total_pages > 1 %}
+      <div class="flex justify-center items-center gap-2 mt-10">
+        {% if page > 1 %}
+        <a href="?{{ ('categoria='+category_slug+'&') if category_slug else '' }}pagina={{ page-1 }}&orden={{ order }}" class="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm hover:border-red-300 hover:text-red-700">← Anterior</a>
+        {% endif %}
+        {% for p_num in range([1,page-2]|max, [total_pages+1,page+3]|min) %}
+        <a href="?{{ ('categoria='+category_slug+'&') if category_slug else '' }}pagina={{ p_num }}&orden={{ order }}"
+           class="px-4 py-2 rounded-xl text-sm {% if p_num == page %}bg-red-600 text-white font-bold{% else %}bg-white border border-neutral-200 hover:border-red-300{% endif %}">{{ p_num }}</a>
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="?{{ ('categoria='+category_slug+'&') if category_slug else '' }}pagina={{ page+1 }}&orden={{ order }}" class="px-4 py-2 bg-white border border-neutral-200 rounded-xl text-sm hover:border-red-300 hover:text-red-700">Siguiente →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Empty state que enseña -->
+      <div class="text-center py-20 max-w-md mx-auto">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">{{ icon('search','w-8 h-8','1.5') }}</div>
+        <h3 class="font-display text-xl font-bold text-ink-900 mb-2">No hay repuestos con estos filtros</h3>
+        <p class="text-neutral-500 mb-6">Probá quitar algún filtro, buscar por el modelo de tu moto, o ver el catálogo completo.</p>
+        <div class="flex flex-wrap justify-center gap-2">
+          <a href="/productos" class="btn-primary px-6 py-3 rounded-xl font-medium transition-colors">Ver todos los repuestos</a>
+          <a href="/tiendas" class="px-6 py-3 rounded-xl font-medium border border-neutral-200 text-ink-800 hover:border-red-300 transition-colors">Ver tiendas</a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var panel=document.getElementById('filtPanel'), bd=document.getElementById('filtBackdrop'),
+        ob=document.getElementById('filtOpen'), cb=document.getElementById('filtClose');
+    function open(){ panel.classList.remove('-translate-x-full'); bd.classList.remove('opacity-0','pointer-events-none'); document.body.style.overflow='hidden'; }
+    function close(){ panel.classList.add('-translate-x-full'); bd.classList.add('opacity-0','pointer-events-none'); document.body.style.overflow=''; }
+    if(ob) ob.addEventListener('click', open);
+    if(cb) cb.addEventListener('click', close);
+    if(bd) bd.addEventListener('click', close);
+  })();
+</script>
+{% endblock %}

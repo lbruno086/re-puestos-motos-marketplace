@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_vendedor_menu.html" import vmenu %}
+{% block title %}Perfil de Tienda — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6 md:py-8">
+  <h1 class="font-display text-2xl font-extrabold text-ink-900 mb-6">Perfil de mi tienda</h1>
+
+  {{ vmenu('perfil') }}
+
+  <form method="post" action="/mi-cuenta/perfil" class="space-y-6">
+
+    <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-5">
+      <h2 class="font-bold text-ink-900 text-lg border-b border-neutral-200 pb-3">Información de la tienda</h2>
+
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1.5">Descripción</label>
+        <textarea name="description" rows="3" placeholder="Contá sobre tu tienda, especialidad, experiencia…"
+          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm resize-none">{{ sp.description or '' }}</textarea>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1.5">Teléfono</label>
+          <input name="phone" value="{{ sp.phone or '' }}" placeholder="0223 000-0000" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1.5">WhatsApp (solo números)</label>
+          <input name="whatsapp" value="{{ sp.whatsapp or '' }}" placeholder="2230000000" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1.5">Dirección</label>
+        <input name="address" value="{{ sp.address or '' }}" placeholder="Av. Independencia 1234" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1.5">Horario de atención</label>
+        <input name="store_hours" value="{{ sp.store_hours or '' }}" placeholder="Lun-Vie 9-18h · Sáb 9-13h" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1.5">Sitio web</label>
+        <input name="website" type="url" value="{{ sp.website or '' }}" placeholder="https://…" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-ink-800 mb-1.5">Marcas que trabajás</label>
+        <input name="brands" value="{{ sp.brands_str or '' }}" placeholder="Honda, Yamaha, Kawasaki, …" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm">
+        <p class="text-xs text-neutral-400 mt-1">Separadas por coma</p>
+      </div>
+    </div>
+
+    <button type="submit" class="w-full btn-primary py-3.5 rounded-xl font-bold transition-colors">Guardar cambios</button>
+  </form>
+</div>
+{% endblock %}

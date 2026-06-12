@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_vendedor_menu.html" import vmenu %}
+{% block title %}Consultas — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+  <h1 class="font-display text-2xl font-extrabold text-ink-900 mb-6">Consultas recibidas</h1>
+
+  {{ vmenu('leads') }}
+
+  {% if leads %}
+  <div class="space-y-4">
+    {% for l in leads %}
+    <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-5">
+      <div class="flex items-start gap-4 flex-wrap">
+        <div class="w-11 h-11 bg-red-50 rounded-full flex items-center justify-center text-lg font-bold text-red-700 flex-shrink-0">{{ l.buyer_name[0] if l.buyer_name else '?' }}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-3 flex-wrap mb-1">
+            <p class="font-bold text-ink-900">{{ l.buyer_name or 'Anónimo' }}</p>
+            <span class="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full border border-red-100">{{ l.status }}</span>
+            <span class="text-xs text-neutral-400">{{ l.created_at[:16] }}</span>
+          </div>
+          <p class="text-sm text-red-600 font-medium mb-2 inline-flex items-center gap-1.5">{{ icon('wrench','w-4 h-4') }} {{ l.prod_title }}</p>
+          {% if l.message %}<p class="text-sm text-ink-700 bg-neutral-50 rounded-xl p-3">{{ l.message }}</p>{% endif %}
+          <div class="flex flex-wrap gap-3 mt-3 text-sm text-neutral-500">
+            {% if l.buyer_email %}
+            <a href="mailto:{{ l.buyer_email }}" class="flex items-center gap-1.5 hover:text-red-600 transition-colors">{{ icon('mail','w-4 h-4') }} {{ l.buyer_email }}</a>
+            {% endif %}
+            {% if l.buyer_phone %}
+            <a href="tel:{{ l.buyer_phone }}" class="flex items-center gap-1.5 hover:text-red-600 transition-colors">{{ icon('phone','w-4 h-4') }} {{ l.buyer_phone }}</a>
+            <a href="https://wa.me/54{{ l.buyer_phone|replace(' ','')|replace('-','') }}" target="_blank" class="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-medium">{{ icon('whatsapp','w-4 h-4') }} Responder por WhatsApp</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-20 bg-white rounded-2xl border border-neutral-200">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">{{ icon('message','w-8 h-8','1.5') }}</div>
+    <h3 class="font-display text-xl font-bold text-ink-900 mb-2">Sin consultas todavía</h3>
+    <p class="text-neutral-500">Cuando alguien consulte por tus repuestos, aparecerán acá.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
