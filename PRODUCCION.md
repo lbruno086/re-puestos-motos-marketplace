@@ -18,5 +18,6 @@ Para escalar mas adelante, migrar SQLite a Postgres.
 - `PORT`: lo define el hosting.
 - `COOKIE_SECRET`: secreto para cookies seguras.
 - `DEBUG`: usar `false` en produccion.
+- `SECURE_COOKIES`: usar `true` en produccion HTTPS.
 - `DB_PATH`: ruta del archivo SQLite. Para disco persistente en Render usar `/var/data/repuestos.db`.
 - `LOAD_CSV_ON_START`: `true` carga `data/productos.csv` al iniciar de forma idempotente.

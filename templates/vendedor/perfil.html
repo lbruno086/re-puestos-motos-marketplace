@@ -9,6 +9,7 @@
   {{ vmenu('perfil') }}
 
   <form method="post" action="/mi-cuenta/perfil" class="space-y-6">
+    {{ xsrf_form_html | safe }}
 
     <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-5">
       <h2 class="font-bold text-ink-900 text-lg border-b border-neutral-200 pb-3">Información de la tienda</h2>

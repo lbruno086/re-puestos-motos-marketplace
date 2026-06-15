@@ -5,10 +5,13 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python start.py
+    healthCheckPath: /healthz
     envVars:
       - key: COOKIE_SECRET
         generateValue: true
       - key: DEBUG
         value: "false"
+      - key: SECURE_COOKIES
+        value: "true"
       - key: LOAD_CSV_ON_START
         value: "true"

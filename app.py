@@ -8,9 +8,16 @@ from database import get_connection, init_db, slugify, MARCAS_MOTO, USD_RATE, ST
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
-COOKIE_SECRET = os.environ.get('COOKIE_SECRET', 'repuestos_motos_2025_secret_key_replace_me')
 PORT = int(os.environ.get('PORT', 8889))
-DEBUG = os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes')
+DEBUG_DEFAULT = 'true' if not os.environ.get('COOKIE_SECRET') else 'false'
+DEBUG = os.environ.get('DEBUG', DEBUG_DEFAULT).lower() in ('1', 'true', 'yes')
+COOKIE_SECRET = os.environ.get('COOKIE_SECRET')
+if not COOKIE_SECRET:
+    if DEBUG:
+        COOKIE_SECRET = 'dev-cookie-secret'
+    else:
+        raise RuntimeError('COOKIE_SECRET is required when DEBUG=false')
+SECURE_COOKIES = os.environ.get('SECURE_COOKIES', '').lower() in ('1', 'true', 'yes')
 
 jinja_env = Environment(
     loader=FileSystemLoader(TEMPLATE_DIR),
@@ -53,6 +60,15 @@ def get_market_prices():
     return [dict(r) for r in rows]
 
 class BaseHandler(tornado.web.RequestHandler):
+    def set_default_headers(self):
+        self.set_header('X-Content-Type-Options', 'nosniff')
+        self.set_header('X-Frame-Options', 'DENY')
+        self.set_header('Referrer-Policy', 'strict-origin-when-cross-origin')
+        self.set_header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+
+    def cookie_options(self):
+        return {'httponly': True, 'secure': SECURE_COOKIES, 'samesite': 'Lax'}
+
     def get_current_user(self):
         uid = self.get_secure_cookie('uid')
         if not uid: return None
@@ -72,6 +88,7 @@ class BaseHandler(tornado.web.RequestHandler):
             market_prices=market_prices,
             request=self.request,
             flash_msg=self.get_secure_cookie('flash'),
+            xsrf_form_html=self.xsrf_form_html(),
             MARCAS_MOTO=MARCAS_MOTO,
             **kwargs
         )
@@ -80,7 +97,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.write(html)
 
     def flash(self, msg):
-        self.set_secure_cookie('flash', msg, expires_days=0.001)
+        self.set_secure_cookie('flash', msg, expires_days=0.001, **self.cookie_options())
 
     def require_login(self):
         if not self.get_current_user():
@@ -133,6 +150,11 @@ class HomeHandler(BaseHandler):
             total_products=total_products,
             total_sellers=total_sellers,
         )
+
+
+class HealthHandler(BaseHandler):
+    def get(self):
+        self.write({'status': 'ok'})
 
 
 class CatalogoHandler(BaseHandler):
@@ -399,7 +421,7 @@ class LoginHandler(BaseHandler):
         user = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         conn.close()
         if user and bcrypt.checkpw(password.encode(), user['password'].encode()):
-            self.set_secure_cookie('uid', str(user['id']), expires_days=30)
+            self.set_secure_cookie('uid', str(user['id']), expires_days=30, **self.cookie_options())
             if user['role'] == 'VENDEDOR':
                 self.redirect('/mi-cuenta/dashboard')
             else:
@@ -444,7 +466,7 @@ class RegisterHandler(BaseHandler):
 
         conn.commit()
         conn.close()
-        self.set_secure_cookie('uid', str(uid), expires_days=30)
+        self.set_secure_cookie('uid', str(uid), expires_days=30, **self.cookie_options())
         self.redirect('/mi-cuenta/dashboard' if role == 'VENDEDOR' else '/')
 
 
@@ -645,6 +667,7 @@ class PerfilTiendaHandler(BaseHandler):
 
 def make_app():
     return tornado.web.Application([
+        (r'/healthz',                HealthHandler),
         (r'/',                       HomeHandler),
         (r'/productos',              CatalogoHandler),
         (r'/producto/([^/]+)',       ProductoHandler),
@@ -662,7 +685,8 @@ def make_app():
         (r'/mi-cuenta/perfil',       PerfilTiendaHandler),
     ],
     cookie_secret=COOKIE_SECRET,
-    xsrf_cookies=False,
+    xsrf_cookies=True,
+    xsrf_cookie_kwargs={'secure': SECURE_COOKIES, 'samesite': 'Lax'},
     debug=DEBUG,
     static_path=os.path.join(BASE_DIR, 'static') if os.path.exists(os.path.join(BASE_DIR, 'static')) else None,
     )
