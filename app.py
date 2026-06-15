@@ -3,6 +3,7 @@ import tornado.web
 import tornado.escape
 import os, json, re, bcrypt, random, string
 from datetime import datetime
+from time import monotonic
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from database import get_connection, init_db, slugify, MARCAS_MOTO, USD_RATE, STORES_MDQ
 
@@ -18,6 +19,7 @@ if not COOKIE_SECRET:
     else:
         raise RuntimeError('COOKIE_SECRET is required when DEBUG=false')
 SECURE_COOKIES = os.environ.get('SECURE_COOKIES', '').lower() in ('1', 'true', 'yes')
+RATE_LIMITS = {}
 
 jinja_env = Environment(
     loader=FileSystemLoader(TEMPLATE_DIR),
@@ -59,6 +61,15 @@ def get_market_prices():
     conn.close()
     return [dict(r) for r in rows]
 
+def unique_product_slug(conn, title):
+    base = slugify(title) or 'producto'
+    candidate = base
+    suffix = 2
+    while conn.execute("SELECT 1 FROM products WHERE slug=?", (candidate,)).fetchone():
+        candidate = f'{base}-{suffix}'
+        suffix += 1
+    return candidate
+
 class BaseHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         self.set_header('X-Content-Type-Options', 'nosniff')
@@ -68,6 +79,23 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def cookie_options(self):
         return {'httponly': True, 'secure': SECURE_COOKIES, 'samesite': 'Lax'}
+
+    def client_ip(self):
+        forwarded = self.request.headers.get('X-Forwarded-For', '')
+        return (forwarded.split(',')[0].strip() if forwarded else self.request.remote_ip) or 'unknown'
+
+    def enforce_rate_limit(self, scope, limit, window_seconds):
+        key = f'{scope}:{self.client_ip()}'
+        now = monotonic()
+        hits = [ts for ts in RATE_LIMITS.get(key, []) if now - ts < window_seconds]
+        if len(hits) >= limit:
+            self.set_status(429)
+            self.write('Demasiados intentos. Espera unos minutos y volve a probar.')
+            RATE_LIMITS[key] = hits
+            return False
+        hits.append(now)
+        RATE_LIMITS[key] = hits
+        return True
 
     def get_current_user(self):
         uid = self.get_secure_cookie('uid')
@@ -313,6 +341,8 @@ class ProductoHandler(BaseHandler):
         )
 
     def post(self, slug):
+        if not self.enforce_rate_limit('lead', 5, 300):
+            return
         conn = get_connection()
         prod = conn.execute("SELECT id,seller_id,title FROM products WHERE slug=?", (slug,)).fetchone()
         if not prod:
@@ -414,6 +444,8 @@ class LoginHandler(BaseHandler):
                              next_url=self.get_argument('next', '/'))
 
     def post(self):
+        if not self.enforce_rate_limit('login', 10, 300):
+            return
         email = self.get_argument('email', '').strip().lower()
         password = self.get_argument('password', '').strip()
         next_url = self.get_argument('next', '/')
@@ -437,6 +469,8 @@ class RegisterHandler(BaseHandler):
         self.render_template('auth/register.html', error=None)
 
     def post(self):
+        if not self.enforce_rate_limit('register', 5, 3600):
+            return
         name = self.get_argument('name', '').strip()
         email = self.get_argument('email', '').strip().lower()
         password = self.get_argument('password', '').strip()
@@ -535,8 +569,7 @@ class NuevoProductoHandler(BaseHandler):
                                  cats=[dict(c) for c in cats], error='El titulo es obligatorio.')
             conn.close(); return
 
-        from database import make_slug
-        slug = make_slug(title)
+        slug = unique_product_slug(conn, title)
         price = float(self.get_argument('price', 0) or 0)
         image_url = self.get_argument('image_url', '').strip() or \
             f'https://picsum.photos/seed/{slug}/800/600'
