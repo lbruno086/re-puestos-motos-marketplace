@@ -3,10 +3,12 @@ services:
     name: re-puestos
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python -c "from database import init_db; init_db()" && python load_productos.py
-    startCommand: python app.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
     envVars:
       - key: COOKIE_SECRET
         generateValue: true
       - key: DEBUG
         value: "false"
+      - key: LOAD_CSV_ON_START
+        value: "true"

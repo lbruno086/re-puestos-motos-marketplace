@@ -12,9 +12,9 @@ import sys
 import unicodedata
 import sqlite3
 import argparse
+from database import DB_PATH
 
 
-DB_PATH  = os.path.join(os.path.dirname(__file__), "repuestos.db")
 CSV_PATH = os.path.join(os.path.dirname(__file__), "data", "productos.csv")
 USD_RATE = 1260.0  # actualizar si cambia el tipo de cambio
 
@@ -30,6 +30,9 @@ def slugify(text: str) -> str:
 
 
 def get_db() -> sqlite3.Connection:
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
