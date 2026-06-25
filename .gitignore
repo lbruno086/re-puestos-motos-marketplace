@@ -5,3 +5,9 @@ repuestos.db
 .env
 *.log
 .claude/
+
+# graphify: machine-specific paths / temp (keep graph.json, report, cache, labels)
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_uncached.txt
+graphify-out/.needs_update

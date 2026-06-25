@@ -1,0 +1,137 @@
+{
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\app.py": {
+    "mtime": 1782267293.8711739,
+    "ast_hash": "ef9bebfdf90110fe7d8b2bea527b4585",
+    "semantic_hash": "ef9bebfdf90110fe7d8b2bea527b4585"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\database.py": {
+    "mtime": 1782267293.8752093,
+    "ast_hash": "4d6708bddf2968e6a14670c167e47e16",
+    "semantic_hash": "4d6708bddf2968e6a14670c167e47e16"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\load_productos.py": {
+    "mtime": 1782267293.8763542,
+    "ast_hash": "14f616d4ed4c28bc654000f7f519a13f",
+    "semantic_hash": "14f616d4ed4c28bc654000f7f519a13f"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\start.py": {
+    "mtime": 1782267293.8846285,
+    "ast_hash": "b78dd4ed8206a3211572c16738e89e12",
+    "semantic_hash": "b78dd4ed8206a3211572c16738e89e12"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\DESIGN.md": {
+    "mtime": 1782267293.860117,
+    "ast_hash": "0ac3afb5f912395a1f7a9b250ac2c499",
+    "semantic_hash": "0ac3afb5f912395a1f7a9b250ac2c499"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\PRODUCCION.md": {
+    "mtime": 1782267293.8672864,
+    "ast_hash": "d2ebf74fa3b264a1ec23ba7bea234272",
+    "semantic_hash": "d2ebf74fa3b264a1ec23ba7bea234272"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\PRODUCT.md": {
+    "mtime": 1782267293.8684168,
+    "ast_hash": "0fb47795bb354a96e3c760e59c9ed6ad",
+    "semantic_hash": "0fb47795bb354a96e3c760e59c9ed6ad"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\README.md": {
+    "mtime": 1782267293.8688495,
+    "ast_hash": "18335f12b82755b65c827ea962d60936",
+    "semantic_hash": "18335f12b82755b65c827ea962d60936"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\render.yaml": {
+    "mtime": 1782267293.8826673,
+    "ast_hash": "6f44bb34eb6909d771697c38294acb4f",
+    "semantic_hash": "6f44bb34eb6909d771697c38294acb4f"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\requirements.txt": {
+    "mtime": 1782267293.883746,
+    "ast_hash": "c714232428d9602affcc669bede34ba8",
+    "semantic_hash": "c714232428d9602affcc669bede34ba8"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\_icons.html": {
+    "mtime": 1782267293.8859384,
+    "ast_hash": "8b4a71624b93cf62b80dbaa986989517",
+    "semantic_hash": "8b4a71624b93cf62b80dbaa986989517"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\_vendedor_menu.html": {
+    "mtime": 1782267293.8859384,
+    "ast_hash": "cd3dd6b9ea1852121fd05623b71edaf6",
+    "semantic_hash": "cd3dd6b9ea1852121fd05623b71edaf6"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\auth\\login.html": {
+    "mtime": 1782267293.8898368,
+    "ast_hash": "94b2f88f702b12a6695db70e6f1eea1c",
+    "semantic_hash": "94b2f88f702b12a6695db70e6f1eea1c"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\auth\\register.html": {
+    "mtime": 1782267293.8898368,
+    "ast_hash": "32537247e0b3123b89fda46f80bf37a7",
+    "semantic_hash": "32537247e0b3123b89fda46f80bf37a7"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\base.html": {
+    "mtime": 1782267293.891846,
+    "ast_hash": "e63850e53a67a1a13f819da38db287cf",
+    "semantic_hash": "e63850e53a67a1a13f819da38db287cf"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\busqueda.html": {
+    "mtime": 1782267293.8938668,
+    "ast_hash": "995b91dc8175382c093568fed16cbb7b",
+    "semantic_hash": "995b91dc8175382c093568fed16cbb7b"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\catalogo.html": {
+    "mtime": 1782267293.8938668,
+    "ast_hash": "1d7243081e57dce213c473ba629c82a8",
+    "semantic_hash": "1d7243081e57dce213c473ba629c82a8"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\home.html": {
+    "mtime": 1782267293.8938668,
+    "ast_hash": "6f57f2f6d2ca702c3ac6f40123b256a4",
+    "semantic_hash": "6f57f2f6d2ca702c3ac6f40123b256a4"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\perfil_vendedor.html": {
+    "mtime": 1782267293.8958828,
+    "ast_hash": "e4daa351a5cddbfef0bc867ebdf9d759",
+    "semantic_hash": "e4daa351a5cddbfef0bc867ebdf9d759"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\producto.html": {
+    "mtime": 1782267293.8958828,
+    "ast_hash": "bad49263f9f09d4170351840068a5af0",
+    "semantic_hash": "bad49263f9f09d4170351840068a5af0"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\tiendas.html": {
+    "mtime": 1782267293.8973992,
+    "ast_hash": "037efe4dde3b0896493e36925c495129",
+    "semantic_hash": "037efe4dde3b0896493e36925c495129"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\vendedor\\dashboard.html": {
+    "mtime": 1782267293.8979368,
+    "ast_hash": "522c9c701e2adae8f503c0c3b224d36e",
+    "semantic_hash": "522c9c701e2adae8f503c0c3b224d36e"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\vendedor\\editar_producto.html": {
+    "mtime": 1782267293.8999915,
+    "ast_hash": "ed1fccfa7dd39bf6b3c5f21251dd49f0",
+    "semantic_hash": "ed1fccfa7dd39bf6b3c5f21251dd49f0"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\vendedor\\leads.html": {
+    "mtime": 1782267293.902025,
+    "ast_hash": "6e55e47a7809eb18fcc81cd887f60d0d",
+    "semantic_hash": "6e55e47a7809eb18fcc81cd887f60d0d"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\vendedor\\nuevo_producto.html": {
+    "mtime": 1782267293.902025,
+    "ast_hash": "cca181a5a8c680cda362037fdf6a8458",
+    "semantic_hash": "cca181a5a8c680cda362037fdf6a8458"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\vendedor\\perfil.html": {
+    "mtime": 1782267293.9050171,
+    "ast_hash": "dafad26e2869703ba646d7d0b8517fa2",
+    "semantic_hash": "dafad26e2869703ba646d7d0b8517fa2"
+  },
+  "C:\\Users\\Bruno\\Desktop\\re-puestos\\templates\\vendedor\\productos.html": {
+    "mtime": 1782267293.9050171,
+    "ast_hash": "d88de1ec802555093beb5c72a1e27266",
+    "semantic_hash": "d88de1ec802555093beb5c72a1e27266"
+  }
+}
