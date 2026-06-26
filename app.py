@@ -19,6 +19,8 @@ if not COOKIE_SECRET:
     else:
         raise RuntimeError('COOKIE_SECRET is required when DEBUG=false')
 SECURE_COOKIES = os.environ.get('SECURE_COOKIES', '').lower() in ('1', 'true', 'yes')
+# Las cuentas demo solo se muestran en desarrollo (o si DEMO_MODE se fuerza a true).
+DEMO_MODE = os.environ.get('DEMO_MODE', 'true' if DEBUG else 'false').lower() in ('1', 'true', 'yes')
 RATE_LIMITS = {}
 
 jinja_env = Environment(
@@ -118,6 +120,7 @@ class BaseHandler(tornado.web.RequestHandler):
             flash_msg=self.get_secure_cookie('flash'),
             xsrf_form_html=self.xsrf_form_html(),
             MARCAS_MOTO=MARCAS_MOTO,
+            demo_mode=DEMO_MODE,
             **kwargs
         )
         if self.get_secure_cookie('flash'):

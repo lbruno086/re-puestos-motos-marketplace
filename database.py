@@ -161,15 +161,9 @@ def make_slug(title):
     _used_slugs.add(s)
     return s
 
-def get_connection():
-    db_dir = os.path.dirname(DB_PATH)
-    if db_dir:
-        os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+# get_connection vive en db.py (dual-driver SQLite/Postgres). Se re-exporta acá
+# para no romper los imports existentes (`from database import get_connection`).
+from db import get_connection, IS_POSTGRES  # noqa: E402
 
 # ─── SCHEMA ──────────────────────────────────────────────────────────────────
 SCHEMA = """

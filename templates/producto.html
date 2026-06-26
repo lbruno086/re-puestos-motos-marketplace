@@ -23,8 +23,12 @@
       {% if prod.images_list|length > 1 %}
       <div class="flex gap-2 mt-3">
         {% for img in prod.images_list %}
-        <img src="{{ img }}" alt="Vista {{ loop.index }} de {{ prod.title }}" onclick="document.getElementById('mainImg').src='{{ img }}'"
-             class="w-16 h-16 object-cover rounded-xl border-2 border-neutral-200 hover:border-red-500 cursor-pointer transition-all">
+        <button type="button" onclick="document.getElementById('mainImg').src='{{ img }}'"
+                aria-label="Ver vista {{ loop.index }} de {{ prod.title }}"
+                class="focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 rounded-xl">
+          <img src="{{ img }}" alt="Vista {{ loop.index }} de {{ prod.title }}"
+               class="w-16 h-16 object-cover rounded-xl border-2 border-neutral-200 hover:border-red-500 cursor-pointer transition-all">
+        </button>
         {% endfor %}
       </div>
       {% endif %}
@@ -107,7 +111,7 @@
         </div>
 
         {% if prod.seller_whatsapp %}
-        <a href="https://wa.me/54{{ prod.seller_whatsapp }}?text=Hola! Vi el repuesto *{{ prod.title }}* en Re-Puestos MDP. ¿Está disponible?" target="_blank"
+        <a href="https://wa.me/54{{ prod.seller_whatsapp | urlencode }}?text={{ ('Hola! Vi el repuesto *' ~ prod.title ~ '* en Re-Puestos MDP. ¿Está disponible?') | urlencode }}" target="_blank" rel="noopener"
            class="w-full flex items-center justify-center gap-2 btn-wa font-bold py-3 rounded-xl transition mb-3 text-sm">
           {{ icon('whatsapp','w-4 h-4') }} Consultar por WhatsApp
         </a>

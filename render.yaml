@@ -1,3 +1,7 @@
+databases:
+  - name: re-puestos-db
+    plan: free
+
 services:
   - type: web
     name: re-puestos
@@ -7,6 +11,12 @@ services:
     startCommand: python start.py
     healthCheckPath: /healthz
     envVars:
+      # Postgres gestionado por Render (persistente). Si no existe, la app
+      # cae a SQLite local automáticamente (ver db.py).
+      - key: DATABASE_URL
+        fromDatabase:
+          name: re-puestos-db
+          property: connectionString
       - key: COOKIE_SECRET
         generateValue: true
       - key: DEBUG
@@ -15,3 +25,14 @@ services:
         value: "true"
       - key: LOAD_CSV_ON_START
         value: "true"
+      # Login con Google (OAuth). Cargar manualmente en el dashboard de Render;
+      # mientras estén vacías, sigue funcionando el login email/password.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      # Apaga las credenciales demo en producción (ver Fase 0 de seguridad).
+      - key: DEMO_MODE
+        value: "false"

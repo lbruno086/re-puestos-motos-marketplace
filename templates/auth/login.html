@@ -38,11 +38,13 @@
       <a href="/auth/register" class="text-red-600 font-semibold hover:text-red-700">Registrarse</a>
     </p>
 
+    {% if demo_mode %}
     <div class="mt-6 bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-xs text-neutral-500">
       <p class="font-semibold text-ink-800 mb-2">Cuentas demo:</p>
       <p class="flex items-center gap-1.5">{{ icon('store','w-3.5 h-3.5 text-red-600') }} tienda1@repuestos.com.ar / Demo1234!</p>
       <p class="flex items-center gap-1.5">{{ icon('package','w-3.5 h-3.5 text-red-600') }} comprador@repuestos.com.ar / Demo1234!</p>
     </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
