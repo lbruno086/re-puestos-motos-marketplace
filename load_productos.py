@@ -10,9 +10,8 @@ import os
 import re
 import sys
 import unicodedata
-import sqlite3
 import argparse
-from database import DB_PATH
+from database import get_connection
 
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "data", "productos.csv")
@@ -29,13 +28,8 @@ def slugify(text: str) -> str:
     return text[:120]
 
 
-def get_db() -> sqlite3.Connection:
-    db_dir = os.path.dirname(DB_PATH)
-    if db_dir:
-        os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+def get_db():
+    return get_connection()
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
