@@ -181,7 +181,7 @@ class HomeHandler(BaseHandler):
                FROM categories c
                LEFT JOIN products p ON p.category_id=c.id AND p.status='ACTIVO'
                WHERE c.parent_id IS NULL
-               GROUP BY c.id ORDER BY c.position"""
+               GROUP BY c.id,c.name,c.slug,c.icon,c.description,c.position ORDER BY c.position"""
         ).fetchall()
         total_products = conn.execute("SELECT COUNT(*) FROM products WHERE status='ACTIVO'").fetchone()[0]
         total_sellers = conn.execute("SELECT COUNT(*) FROM seller_profiles").fetchone()[0]
@@ -292,15 +292,15 @@ class CatalogoHandler(BaseHandler):
             params).fetchall()
         vertical_placeholders = ','.join(['?'] * len(self.VERTICALS))
         all_cats = conn.execute(
-            "SELECT c.*, COUNT(p.id) as cnt FROM categories c "
+            "SELECT c.id,c.name,c.slug,c.icon,c.description,c.parent_id,c.position,c.vertical,c.image_url, COUNT(p.id) as cnt FROM categories c "
             "LEFT JOIN products p ON p.category_id=c.id AND p.status='ACTIVO' "
             f"WHERE c.parent_id IS NULL AND c.vertical IN ({vertical_placeholders}) "
-            "GROUP BY c.id ORDER BY c.position", list(self.VERTICALS)).fetchall()
+            "GROUP BY c.id,c.name,c.slug,c.icon,c.description,c.parent_id,c.position,c.vertical,c.image_url ORDER BY c.position", list(self.VERTICALS)).fetchall()
         sellers_for_filter = conn.execute(
             "SELECT sp.user_id as id, sp.company_name, sp.verified, "
             "COUNT(p.id) as cnt FROM seller_profiles sp "
             "LEFT JOIN products p ON p.seller_id=sp.user_id AND p.status='ACTIVO' "
-            "GROUP BY sp.user_id ORDER BY cnt DESC"
+            "GROUP BY sp.user_id, sp.company_name, sp.verified ORDER BY cnt DESC"
         ).fetchall()
         conn.close()
 
