@@ -1,7 +1,10 @@
 import tornado.ioloop
 import tornado.web
 import tornado.escape
-import os, json, re, bcrypt, random, string
+import os, json, re, bcrypt, random, string, secrets, urllib.parse
+import requests
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 from datetime import datetime
 from time import monotonic
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -22,6 +25,14 @@ SECURE_COOKIES = os.environ.get('SECURE_COOKIES', '').lower() in ('1', 'true', '
 # Las cuentas demo solo se muestran en desarrollo (o si DEMO_MODE se fuerza a true).
 DEMO_MODE = os.environ.get('DEMO_MODE', 'true' if DEBUG else 'false').lower() in ('1', 'true', 'yes')
 RATE_LIMITS = {}
+
+# ── Google OAuth (opcional: si no hay credenciales, el boton queda oculto) ────
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '').strip()
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '').strip()
+GOOGLE_AUTH_ENABLED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI)
+GOOGLE_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
 jinja_env = Environment(
     loader=FileSystemLoader(TEMPLATE_DIR),
@@ -122,6 +133,7 @@ class BaseHandler(tornado.web.RequestHandler):
             xsrf_form_html=self.xsrf_form_html(),
             MARCAS_MOTO=MARCAS_MOTO,
             demo_mode=DEMO_MODE,
+            google_auth_enabled=GOOGLE_AUTH_ENABLED,
             **kwargs
         )
         if self.get_secure_cookie('flash'):
@@ -576,6 +588,123 @@ class LogoutHandler(BaseHandler):
         self.redirect('/')
 
 
+class GoogleAuthHandler(BaseHandler):
+    def get(self):
+        if not GOOGLE_AUTH_ENABLED:
+            self.redirect('/auth/login')
+            return
+        state = secrets.token_urlsafe(24)
+        self.set_secure_cookie('oauth_state', state, expires_days=0.02, **self.cookie_options())
+        next_url = self.get_argument('next', '/')
+        self.set_secure_cookie('oauth_next', next_url, expires_days=0.02, **self.cookie_options())
+        params = {
+            'client_id': GOOGLE_CLIENT_ID,
+            'redirect_uri': GOOGLE_REDIRECT_URI,
+            'response_type': 'code',
+            'scope': 'openid email profile',
+            'state': state,
+            'access_type': 'online',
+            'prompt': 'select_account',
+        }
+        self.redirect(f"{GOOGLE_AUTHORIZE_URL}?{urllib.parse.urlencode(params)}")
+
+
+class GoogleAuthCallbackHandler(BaseHandler):
+    def get(self):
+        if not GOOGLE_AUTH_ENABLED:
+            self.redirect('/auth/login')
+            return
+        if self.get_argument('error', ''):
+            self.redirect('/auth/login')
+            return
+
+        state = self.get_argument('state', '')
+        cookie_state = self.get_secure_cookie('oauth_state')
+        self.clear_cookie('oauth_state')
+        if not state or not cookie_state or state != cookie_state.decode():
+            self.set_status(400)
+            self.write('Estado OAuth invalido o expirado. Volve a intentar.')
+            return
+
+        next_cookie = self.get_secure_cookie('oauth_next')
+        next_url = next_cookie.decode() if next_cookie else '/'
+        self.clear_cookie('oauth_next')
+
+        code = self.get_argument('code', '')
+        try:
+            token_resp = requests.post(GOOGLE_TOKEN_URL, data={
+                'code': code,
+                'client_id': GOOGLE_CLIENT_ID,
+                'client_secret': GOOGLE_CLIENT_SECRET,
+                'redirect_uri': GOOGLE_REDIRECT_URI,
+                'grant_type': 'authorization_code',
+            }, timeout=10)
+            token_resp.raise_for_status()
+            tokens = token_resp.json()
+            idinfo = google_id_token.verify_oauth2_token(
+                tokens['id_token'], google_requests.Request(), GOOGLE_CLIENT_ID)
+        except Exception:
+            self.set_status(400)
+            self.write('No se pudo verificar el login con Google. Volve a intentar.')
+            return
+
+        google_sub = idinfo['sub']
+        email = (idinfo.get('email') or '').strip().lower()
+        name = idinfo.get('name') or (email.split('@')[0] if email else 'Usuario Google')
+        avatar = idinfo.get('picture')
+
+        conn = get_connection()
+        user = conn.execute("SELECT * FROM users WHERE google_id=?", (google_sub,)).fetchone()
+        is_new = False
+        if not user and email:
+            user = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+            if user:
+                conn.execute("UPDATE users SET google_id=?, avatar_url=? WHERE id=?",
+                             (google_sub, avatar, user['id']))
+                conn.commit()
+        if not user:
+            is_new = True
+            # Password placeholder inutilizable: el login local sigue exigiendo NOT NULL en SQLite.
+            placeholder_pw = bcrypt.hashpw(secrets.token_bytes(32), bcrypt.gensalt()).decode()
+            conn.execute(
+                "INSERT INTO users(name,email,password,role,auth_provider,google_id,avatar_url) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (name, email, placeholder_pw, 'COMPRADOR', 'GOOGLE', google_sub, avatar))
+            conn.commit()
+            user = conn.execute("SELECT * FROM users WHERE google_id=?", (google_sub,)).fetchone()
+        conn.close()
+
+        self.set_secure_cookie('uid', str(user['id']), expires_days=30, **self.cookie_options())
+        if is_new:
+            self.redirect('/auth/onboarding')
+        else:
+            self.redirect(next_url if next_url.startswith('/') else '/')
+
+
+class OnboardingHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        self.render_template('auth/onboarding.html')
+
+    def post(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        role = self.get_argument('role', 'COMPRADOR')
+        if role not in ('COMPRADOR', 'VENDEDOR'):
+            role = 'COMPRADOR'
+        company = self.get_argument('company_name', '').strip()
+        conn = get_connection()
+        conn.execute("UPDATE users SET role=? WHERE id=?", (role, user['id']))
+        if role == 'VENDEDOR' and company:
+            existing_sp = conn.execute("SELECT id FROM seller_profiles WHERE user_id=?", (user['id'],)).fetchone()
+            if not existing_sp:
+                conn.execute("INSERT INTO seller_profiles(user_id,company_name) VALUES(?,?)",
+                             (user['id'], company))
+        conn.commit()
+        conn.close()
+        self.redirect('/mi-cuenta/dashboard' if role == 'VENDEDOR' else '/')
+
+
 # ── VENDEDOR DASHBOARD ─────────────────────────────────────────────────────────
 class DashboardHandler(BaseHandler):
     def get(self):
@@ -779,6 +908,9 @@ def make_app():
         (r'/auth/login',             LoginHandler),
         (r'/auth/register',          RegisterHandler),
         (r'/auth/logout',            LogoutHandler),
+        (r'/auth/google',            GoogleAuthHandler),
+        (r'/auth/google/callback',   GoogleAuthCallbackHandler),
+        (r'/auth/onboarding',        OnboardingHandler),
         (r'/mi-cuenta/dashboard',    DashboardHandler),
         (r'/mi-cuenta/productos',    MisProductosHandler),
         (r'/mi-cuenta/nuevo',        NuevoProductoHandler),
