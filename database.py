@@ -275,7 +275,255 @@ CREATE TABLE IF NOT EXISTS market_prices (
     change_pct REAL DEFAULT 0,
     category TEXT
 );
+
+CREATE TABLE IF NOT EXISTS favorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id),
+    product_id INTEGER REFERENCES products(id),
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(user_id, product_id)
+);
+
+CREATE TABLE IF NOT EXISTS view_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id),
+    product_id INTEGER REFERENCES products(id),
+    viewed_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS visited_places (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id),
+    seller_id INTEGER REFERENCES users(id),
+    lat REAL, lng REAL, label TEXT,
+    visited_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS services (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id INTEGER REFERENCES users(id),
+    name TEXT, rubro TEXT,
+    description TEXT, phone TEXT, whatsapp TEXT,
+    lat REAL, lng REAL, location_label TEXT, address TEXT,
+    store_hours TEXT, verified INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_view_history_user ON view_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_visited_places_user ON visited_places(user_id);
 """
+
+# ─── MIGRACIÓN IDEMPOTENTE (columnas nuevas sobre esquema existente) ──────────
+def migrate_schema(conn):
+    from db import add_column_if_missing, IS_POSTGRES as _is_pg
+    add_column_if_missing(conn, 'users', 'google_id', 'TEXT')
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL")
+    add_column_if_missing(conn, 'users', 'avatar_url', 'TEXT')
+    add_column_if_missing(conn, 'users', 'auth_provider', "TEXT DEFAULT 'LOCAL'")
+    add_column_if_missing(conn, 'users', 'lat', 'REAL')
+    add_column_if_missing(conn, 'users', 'lng', 'REAL')
+    add_column_if_missing(conn, 'users', 'location_label', 'TEXT')
+    if _is_pg:
+        # Postgres soporta relajar NOT NULL; SQLite no sin reconstruir la tabla,
+        # asi que en SQLite los usuarios de Google reciben un hash inutilizable.
+        conn.execute("ALTER TABLE users ALTER COLUMN password DROP NOT NULL")
+
+    add_column_if_missing(conn, 'products', 'lat', 'REAL')
+    add_column_if_missing(conn, 'products', 'lng', 'REAL')
+    add_column_if_missing(conn, 'products', 'location_label', 'TEXT')
+    add_column_if_missing(conn, 'products', 'listing_type', "TEXT DEFAULT 'PRODUCTO'")
+    add_column_if_missing(conn, 'products', 'seller_kind', 'TEXT')
+    add_column_if_missing(conn, 'products', 'moto_year', 'INTEGER')
+    add_column_if_missing(conn, 'products', 'moto_cc', 'INTEGER')
+    add_column_if_missing(conn, 'products', 'moto_km', 'INTEGER')
+    add_column_if_missing(conn, 'products', 'papers_ok', 'INTEGER')
+
+    add_column_if_missing(conn, 'categories', 'vertical', "TEXT DEFAULT 'REPUESTOS'")
+    conn.commit()
+
+
+# ─── VERTICALES: ACCESORIOS / MOTOS / AVISOS ──────────────────────────────────
+ACCESORIOS_CATS = [
+    ('GPS y Navegación', 'gps-navegacion', '🧭', 'Soportes celular, GPS y porta-documentos'),
+    ('Audio y Multimedia', 'audio-multimedia', '🔊', 'Parlantes, alarmas y sistemas de sonido'),
+    ('Cobertores y Fundas', 'cobertores-fundas', '🛡️', 'Cobertores impermeables y fundas de asiento'),
+    ('Herramientas y Mantenimiento', 'herramientas-mantenimiento', '🧰', 'Kits de herramientas y limpieza'),
+]
+
+ACCESORIOS_PRODUCTS = [
+    ('Soporte de celular para manubrio universal', 'gps-navegacion', None, None, ['Universal'], 4200,
+     'Soporte antivibración para celular, ajustable a cualquier manubrio.', 'NUEVO'),
+    ('GPS Garmin Zumo 396 para moto', 'gps-navegacion', 'Garmin', 'Zumo 396', ['Universal'], 185000,
+     'GPS resistente al agua, pantalla táctil, mapas de Argentina precargados.', 'NUEVO'),
+    ('Parlantes Bluetooth para moto 2x4 pulgadas', 'audio-multimedia', None, None, ['Universal'], 32000,
+     'Sistema de audio Bluetooth resistente al agua para manubrio.', 'NUEVO'),
+    ('Alarma con control remoto para moto', 'audio-multimedia', None, None, ['Universal'], 18500,
+     'Alarma con sensor de movimiento y sirena 120dB.', 'NUEVO'),
+    ('Cobertor de moto impermeable talle L', 'cobertores-fundas', None, None, ['Universal'], 12800,
+     'Cobertor con costuras selladas, protege del sol y la lluvia.', 'NUEVO'),
+    ('Funda de asiento de gel antideslizante', 'cobertores-fundas', None, None, ['Universal'], 9600,
+     'Funda de gel para mayor confort en viajes largos.', 'NUEVO'),
+    ('Kit de herramientas básico para moto (12 piezas)', 'herramientas-mantenimiento', None, None, ['Universal'], 7400,
+     'Llaves, destornilladores y pinzas en estuche compacto.', 'NUEVO'),
+    ('Kit de limpieza y abrillantado para moto', 'herramientas-mantenimiento', None, None, ['Universal'], 6200,
+     'Shampoo, cera y paños de microfibra para el cuidado de la moto.', 'NUEVO'),
+]
+
+
+def _seed_verticals_if_missing(conn):
+    """Idempotente: agrega ramas Accesorios/Motos/Avisos si todavia no existen."""
+    # Indumentaria (cascos, guantes, etc.) pertenece a Accesorios, no Repuestos.
+    conn.execute("""UPDATE categories SET vertical='ACCESORIOS'
+        WHERE slug IN ('indumentaria','cascos','guantes','camperas-pantalones','botas','accesorios-seguridad')""")
+    conn.commit()
+
+    max_pos_row = conn.execute("SELECT COALESCE(MAX(position),0) FROM categories WHERE parent_id IS NULL").fetchone()
+    pos = (max_pos_row[0] or 0) + 1
+
+    cat_map = {}
+    for name, slug, icon, desc in ACCESORIOS_CATS:
+        existing = conn.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()
+        if existing:
+            cat_map[slug] = existing[0]
+            continue
+        conn.execute(
+            "INSERT INTO categories(name,slug,icon,description,position,image_url,vertical) "
+            "VALUES(?,?,?,?,?,?,'ACCESORIOS')",
+            (name, slug, icon, desc, pos, img(slug)))
+        cat_map[slug] = conn.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()[0]
+        pos += 1
+    conn.commit()
+
+    for slug, vertical, name, icon, desc in [
+        ('motos-en-venta', 'MOTOS', 'Motos en venta', '🏍️', 'Motos publicadas por particulares y concesionarias'),
+        ('avisos-varios', 'AVISOS', 'Avisos', '📋', 'Avisos clasificados varios'),
+    ]:
+        row = conn.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()
+        if not row:
+            conn.execute(
+                "INSERT INTO categories(name,slug,icon,description,position,vertical) "
+                "VALUES(?,?,?,?,?,?)", (name, slug, icon, desc, pos, vertical))
+            pos += 1
+        cat_map[slug] = conn.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()[0]
+    conn.commit()
+
+    # Productos demo de Accesorios (solo si la vertical esta vacia)
+    accesorios_count = conn.execute(
+        "SELECT COUNT(*) FROM products WHERE category_id IN (%s)" %
+        ','.join(str(cat_map[s]) for _, s, *_ in ACCESORIOS_CATS)).fetchone()[0]
+    if accesorios_count == 0:
+        seller_ids = [r[0] for r in conn.execute("SELECT id FROM users WHERE role='VENDEDOR'").fetchall()]
+        if seller_ids:
+            for title, cat_slug, brand, model, compat, price, desc, condition in ACCESORIOS_PRODUCTS:
+                seller_id = random.choice(seller_ids)
+                cat_id = cat_map[cat_slug]
+                slug = make_slug(title)
+                price_usd = round(price / USD_RATE, 2)
+                img_url = cat_img(cat_slug, random.randint(1, 999))
+                conn.execute("""
+                    INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
+                        price,price_usd,condition,brand,model,compatible_models,stock,
+                        status,province,city,views,leads_count,featured,part_number,
+                        image_url,images,tags,listing_type)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'PRODUCTO')""",
+                    (seller_id, cat_id, title, slug,
+                     desc[:100], desc, price, price_usd, condition, brand, model,
+                     json.dumps(compat), random.randint(3, 40), 'ACTIVO',
+                     'Buenos Aires', 'Mar del Plata', random.randint(20, 800),
+                     random.randint(1, 30), 0, f"AC-{random.randint(10000,99999)}",
+                     img_url, json.dumps([img_url]), json.dumps([brand or '', cat_slug])))
+            conn.commit()
+
+    # Motos demo (particulares y concesionarias)
+    motos_count = conn.execute(
+        "SELECT COUNT(*) FROM products WHERE listing_type='MOTO'").fetchone()[0]
+    if motos_count == 0:
+        seller_ids = [r[0] for r in conn.execute("SELECT id FROM users WHERE role='VENDEDOR'").fetchall()]
+        if seller_ids:
+            motos_cat_id = cat_map['motos-en-venta']
+            demo_motos = [
+                ('Honda Wave 110 2021', 'Honda', 'Wave 110', 2021, 110, 12500, 980000, 'CONCESIONARIA', 1),
+                ('Yamaha YBR 125 2019', 'Yamaha', 'YBR 125', 2019, 125, 28400, 1450000, 'PARTICULAR', 1),
+                ('Zanella ZB 110 2022', 'Zanella', 'ZB 110', 2022, 110, 6200, 870000, 'CONCESIONARIA', 0),
+                ('Kawasaki Ninja 400 2020', 'Kawasaki', 'Ninja 400', 2020, 400, 15800, 6800000, 'PARTICULAR', 1),
+                ('Motomel Skua 150 2018', 'Motomel', 'Skua 150', 2018, 150, 34200, 1190000, 'PARTICULAR', 0),
+                ('Bajaj Rouser 200 2023', 'Bajaj', 'Rouser NS 200', 2023, 200, 3100, 3450000, 'CONCESIONARIA', 1),
+            ]
+            for title, brand, model, year, cc, km, price, seller_kind, papers_ok in demo_motos:
+                seller_id = random.choice(seller_ids)
+                slug = make_slug(title)
+                price_usd = round(price / USD_RATE, 2)
+                img_url = cat_img('motos-en-venta', random.randint(1, 999))
+                desc = f"{brand} {model} año {year}, {km:,} km. Service al dia, papeles {'al dia' if papers_ok else 'en tramite'}.".replace(',', '.')
+                conn.execute("""
+                    INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
+                        price,price_usd,condition,brand,model,compatible_models,stock,
+                        status,province,city,views,leads_count,featured,part_number,
+                        image_url,images,tags,listing_type,seller_kind,moto_year,moto_cc,moto_km,papers_ok)
+                    VALUES(?,?,?,?,?,?,?,?,'USADO',?,?,?,1,'ACTIVO',?,?,?,?,0,?,?,?,?,'MOTO',?,?,?,?,?)""",
+                    (seller_id, motos_cat_id, title, slug, desc[:100], desc,
+                     price, price_usd, brand, model, json.dumps([f'{brand} {model}']),
+                     'Buenos Aires', 'Mar del Plata', random.randint(50, 900),
+                     random.randint(1, 25), f"MT-{random.randint(10000,99999)}",
+                     img_url, json.dumps([img_url]), json.dumps([brand, model]),
+                     seller_kind, year, cc, km, papers_ok))
+            conn.commit()
+
+    # Avisos demo (publicaciones livianas, sin verificacion de vendedor)
+    avisos_count = conn.execute(
+        "SELECT COUNT(*) FROM products WHERE listing_type='AVISO'").fetchone()[0]
+    if avisos_count == 0:
+        seller_ids = [r[0] for r in conn.execute("SELECT id FROM users").fetchall()]
+        if seller_ids:
+            avisos_cat_id = cat_map['avisos-varios']
+            demo_avisos = [
+                ('Busco mecánico a domicilio zona Centro', 'Necesito alguien de confianza para arreglo de embrague.', 0),
+                ('Vendo cascos usados varios talles', 'Tres cascos en buen estado, $8000 cada uno.', 8000),
+                ('Compro moto chocada para repuestos', 'Pago en efectivo, retiro yo mismo.', 0),
+                ('Se ofrece servicio de fletes con moto', 'Envíos rápidos zona Mar del Plata.', 0),
+            ]
+            for title, desc, price in demo_avisos:
+                seller_id = random.choice(seller_ids)
+                slug = make_slug(title)
+                img_url = cat_img('avisos-varios', random.randint(1, 999))
+                conn.execute("""
+                    INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
+                        price,price_usd,condition,stock,status,province,city,views,leads_count,
+                        featured,part_number,image_url,images,tags,listing_type)
+                    VALUES(?,?,?,?,?,?,?,?,'USADO',1,'ACTIVO',?,?,?,?,0,?,?,?,?,'AVISO')""",
+                    (seller_id, avisos_cat_id, title, slug, desc[:100], desc,
+                     price or None, round((price or 0) / USD_RATE, 2),
+                     'Buenos Aires', 'Mar del Plata', random.randint(10, 300),
+                     random.randint(0, 10), f"AV-{random.randint(10000,99999)}",
+                     img_url, json.dumps([img_url]), json.dumps(['aviso'])))
+            conn.commit()
+
+    # Servicios demo (talleres, gomerias, etc. - tabla propia, no products)
+    servicios_count = conn.execute("SELECT COUNT(*) FROM services").fetchone()[0]
+    if servicios_count == 0:
+        seller_ids = [r[0] for r in conn.execute("SELECT id FROM users WHERE role='VENDEDOR'").fetchall()]
+        if seller_ids:
+            demo_servicios = [
+                ('Taller Mecánico El Rayo', 'TALLER', 'Reparación general, service y diagnóstico de motos.',
+                 '0223 455-1010', '2234551010', -38.0011, -57.5481, 'Centro, Mar del Plata'),
+                ('Gomería Don Pedro', 'GOMERIA', 'Reparación de cubiertas y balanceo de ruedas.',
+                 '0223 466-2020', '2234662020', -37.9988, -57.5601, 'Zona Sur, Mar del Plata'),
+                ('Electricidad MotoSpark', 'ELECTRICA', 'Diagnóstico eléctrico, CDI, bobinas y cableado.',
+                 '0223 477-3030', '2234773030', -38.0102, -57.5512, 'Zona Norte, Mar del Plata'),
+                ('Grabado de Autopartes MDP', 'GRABADO', 'Grabado antirrobo de motor y chasis.',
+                 '0223 488-4040', '2234884040', -37.9956, -57.5701, 'Centro, Mar del Plata'),
+                ('Seguros Moto Total', 'SEGURO', 'Seguros de moto a terceros y todo riesgo.',
+                 '0223 499-5050', '2234995050', -38.0033, -57.5450, 'Centro, Mar del Plata'),
+            ]
+            for name, rubro, desc, phone, wa, lat, lng, label in demo_servicios:
+                seller_id = random.choice(seller_ids)
+                conn.execute("""
+                    INSERT INTO services(seller_id,name,rubro,description,phone,whatsapp,
+                        lat,lng,location_label,address,store_hours,verified)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?,1)""",
+                    (seller_id, name, rubro, desc, phone, wa, lat, lng, label, label, 'Lun-Vie 9-18h'))
+            conn.commit()
 
 # ─── DATOS DE REFERENCIA (ticker) ────────────────────────────────────────────
 MARKET_PRICES_DATA = [
@@ -935,8 +1183,10 @@ def init_db():
     conn = get_connection()
     conn.executescript(SCHEMA)
     conn.commit()
+    migrate_schema(conn)
 
     if conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0] > 0:
+        _seed_verticals_if_missing(conn)
         conn.close()
         return
 
@@ -1100,5 +1350,6 @@ def init_db():
                  (datetime.now() - timedelta(days=random.randint(1,300))).strftime('%Y-%m-%d %H:%M:%S')))
 
     conn.commit()
+    _seed_verticals_if_missing(conn)
     conn.close()
     print("[OK] Base de datos inicializada con datos demo de repuestos de motos MDP")

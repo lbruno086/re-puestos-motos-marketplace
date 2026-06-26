@@ -142,6 +142,15 @@
       </form>
 
       <nav class="hidden md:flex items-center gap-1 text-sm">
+        <a href="/motos" class="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white font-medium transition-colors">
+          {{ icon('bike', 'w-4 h-4') }} Motos
+        </a>
+        <a href="/avisos" class="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white font-medium transition-colors">
+          {{ icon('package', 'w-4 h-4') }} Avisos
+        </a>
+        <a href="/servicios" class="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white font-medium transition-colors">
+          {{ icon('wrench', 'w-4 h-4') }} Servicios
+        </a>
         <a href="/tiendas" class="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white font-medium transition-colors">
           {{ icon('map-pin', 'w-4 h-4') }} Tiendas MDP
         </a>
@@ -190,8 +199,11 @@
     <button id="navClose" aria-label="Cerrar menú" class="p-2 rounded-lg text-white/70 hover:bg-white/10">{{ icon('x', 'w-5 h-5') }}</button>
   </div>
   <div class="flex-1 overflow-y-auto px-3 py-4">
+    <a href="/productos" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('wrench','w-5 h-5 text-red-500') }} Repuestos y Accesorios</a>
+    <a href="/motos" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('bike','w-5 h-5 text-red-500') }} Motos</a>
+    <a href="/avisos" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('package','w-5 h-5 text-red-500') }} Avisos</a>
+    <a href="/servicios" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('wrench','w-5 h-5 text-red-500') }} Servicios</a>
     <a href="/tiendas" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('map-pin','w-5 h-5 text-red-500') }} Tiendas en MDP</a>
-    <a href="/productos" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">{{ icon('wrench','w-5 h-5 text-red-500') }} Todos los repuestos</a>
     <div class="my-3 border-t border-white/10"></div>
     <p class="px-3 pb-1 text-[11px] uppercase tracking-wider text-white/40 font-semibold">Categorías</p>
     {% for item in nav_categories %}

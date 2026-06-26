@@ -1,0 +1,47 @@
+
+
+
+
+
+0. /radar-competencia realiza una busqueda exhaustiva en la web, 
+de las principales paginas de motos del mundo, ten en cuenta 
+la paleta de colores, la fuente, los diseños, las fotografias, 
+trabaja conjuntamente con /frontend-design para identificar 
+toda la estetica, o el patron de impacto visual, que permita
+alcanzar una diseño que sintetice todas estas paginas, pero que sea superador, 
+Revisa las principales paginas de motos del mundo, eso incluye harley davidson, 
+benedlli, etc, y trata de identificar patrones esteticos. 
+
+El entregable debera ser el spec con 
+ toda la estructura de diseño, para poder ser utilizado en el ecommerce de motos, 
+ 
+
+
+1. /product-reverse-engineer Necesitamos realizar un producto con un grado de similaridad
+del 99% con el ecommerce del agro agrofy.com, pero llevado al campo de motos.
+Muy  importante considerar los atributos de geolocalizacion, tanto ubcacion den el mapa
+como descripcion de donde es, es un punto que falta en el ecommerce.
+
+La idea original es replicar exactamente su funcionalidad, pero 
+la paleta de colores y el formato debera ser diferente y que surga 
+del analisis realizado por  el spec de  /radar-competencia, 
+el ecommerce debera quedar segmentado en diferentes Categorias, 
+dentro de esta categoria se divide en 2, repuestos y accessios 
+
+y despues que haya otro selector que sea Avisos,
+
+Motos ( se refiere a la venta de motos que pueden ser particulares o por concesionaria, 
+que se debe agregar un filtro)  --> particulares 
+                                    Concesionarias 
+ 
+Servicios 
+
+El entregable va a ser un spec con el plan, para la depuracion y pulido 
+del ecommerce con las iniciativas aca descriptas que llaaremmos 
+spec_pulido.md y plan_pulido.md
+
+
+
+
+2. /web-artifacts-builder junto con /front-design levantan el spec_pulido.md y el plan_pulido.md 
+y lo implementan con todas caracteristicas, en el proceso debera preguntarse 

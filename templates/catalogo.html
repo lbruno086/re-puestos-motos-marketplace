@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}{{ current_cat.name + ' — ' if current_cat else '' }}Catálogo — Re-Puestos MDP{% endblock %}
+{% block title %}{{ current_cat.name + ' — ' if current_cat else '' }}{{ vertical_label }} — Re-Puestos MDP{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
@@ -9,7 +9,7 @@
   <nav class="text-sm text-neutral-500 mb-5 flex items-center gap-2" aria-label="Migas">
     <a href="/" class="hover:text-red-600">Inicio</a>
     {{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}
-    <a href="/productos" class="hover:text-red-600">Repuestos</a>
+    <a href="{{ base_url }}" class="hover:text-red-600">{{ vertical_label }}</a>
     {% if current_cat %}{{ icon('chevron-right','w-3.5 h-3.5 text-neutral-300') }}<span class="text-ink-900 font-medium">{{ current_cat.name }}</span>{% endif %}
   </nav>
 
@@ -32,10 +32,10 @@
       <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
         <h3 class="font-bold text-ink-900 text-sm mb-3">Categorías</h3>
         <ul class="space-y-1">
-          <li><a href="/productos" class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if not category_slug %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}"><span>Todos</span></a></li>
+          <li><a href="{{ base_url }}" class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if not category_slug %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}"><span>Todos</span></a></li>
           {% for cat in all_cats %}
           <li>
-            <a href="/productos?categoria={{ cat.slug }}"
+            <a href="{{ base_url }}?categoria={{ cat.slug }}"
                class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if category_slug == cat.slug %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">
               <span class="truncate">{{ cat.name }}</span>
               <span class="text-xs text-neutral-400 ml-1">{{ cat.cnt }}</span>
@@ -45,10 +45,25 @@
         </ul>
       </div>
 
+      <!-- Particular / Concesionaria (solo vertical Motos) -->
+      {% if show_vendedor_filter %}
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
+        <h3 class="font-bold text-ink-900 text-sm mb-3">Vendedor</h3>
+        <ul class="space-y-1">
+          {% for v, label in [('','Todos'),('particular','Particular'),('concesionaria','Concesionaria')] %}
+          <li>
+            <a href="{{ base_url }}?{{ 'vendedor=' + v if v else '' }}"
+               class="block px-2 py-1.5 rounded-lg text-sm {% if vendedor_tipo_arg == v %}text-red-700 font-semibold bg-red-50{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">{{ label }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
       <!-- Precio -->
       <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 mb-4">
         <h3 class="font-bold text-ink-900 text-sm mb-3">Precio</h3>
-        <form method="get" action="/productos" class="space-y-2">
+        <form method="get" action="{{ base_url }}" class="space-y-2">
           {% if category_slug %}<input type="hidden" name="categoria" value="{{ category_slug }}">{% endif %}
           {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
           {% if brand %}<input type="hidden" name="marca" value="{{ brand }}">{% endif %}
@@ -66,7 +81,7 @@
         <ul class="space-y-1 max-h-48 overflow-y-auto">
           {% for b in brands_available %}
           <li>
-            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}marca={{ b }}"
+            <a href="{{ base_url }}?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}marca={{ b }}"
                class="flex items-center px-2 py-1.5 rounded-lg text-sm {% if brand == b %}text-red-700 font-semibold bg-red-50{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">{{ b }}</a>
           </li>
           {% endfor %}
@@ -80,7 +95,7 @@
         <ul class="space-y-1">
           {% for cond, label in [('','Todo'),('NUEVO','Nuevo'),('USADO','Usado')] %}
           <li>
-            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}condicion={{ cond }}"
+            <a href="{{ base_url }}?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}condicion={{ cond }}"
                class="block px-2 py-1.5 rounded-lg text-sm {% if condition == cond %}text-red-700 font-semibold bg-red-50{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">{{ label }}</a>
           </li>
           {% endfor %}
@@ -93,13 +108,13 @@
         <h3 class="font-bold text-ink-900 text-sm mb-3 flex items-center gap-1.5">{{ icon('map-pin','w-4 h-4 text-red-600') }} Tienda MDP</h3>
         <ul class="space-y-1">
           <li>
-            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}{{ ('q=' + search + '&') if search else '' }}{{ ('marca=' + brand + '&') if brand else '' }}"
+            <a href="{{ base_url }}?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}{{ ('q=' + search + '&') if search else '' }}{{ ('marca=' + brand + '&') if brand else '' }}"
                class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if not tienda %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}"><span>Todas las tiendas</span></a>
           </li>
           {% for s in sellers_for_filter %}
           {% if s.cnt > 0 %}
           <li>
-            <a href="/productos?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}{{ ('q=' + search + '&') if search else '' }}{{ ('marca=' + brand + '&') if brand else '' }}tienda={{ s.id }}"
+            <a href="{{ base_url }}?{{ 'categoria=' + category_slug + '&' if category_slug else '' }}{{ ('q=' + search + '&') if search else '' }}{{ ('marca=' + brand + '&') if brand else '' }}tienda={{ s.id }}"
                class="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm {% if tienda == s.id|string %}bg-red-50 text-red-700 font-semibold{% else %}text-ink-800 hover:bg-neutral-100{% endif %}">
               <span class="flex items-center gap-1 truncate">
                 {% if s.verified %}<span class="text-red-600">{{ icon('check','w-3 h-3') }}</span>{% endif %}
@@ -125,9 +140,9 @@
           <h1 class="font-display text-xl font-bold text-ink-900 flex items-center gap-2">
             {% if current_cat %}{{ current_cat.name }}
             {% elif search %}Resultados para “{{ search }}”
-            {% else %}Todos los repuestos{% endif %}
+            {% else %}Todo en {{ vertical_label }}{% endif %}
           </h1>
-          <p class="text-sm text-neutral-500 mt-0.5">{{ total }} repuestos encontrados</p>
+          <p class="text-sm text-neutral-500 mt-0.5">{{ total }} {{ item_noun }} encontrados</p>
         </div>
         <div class="flex items-center gap-2">
           <!-- Botón filtros (mobile) -->
@@ -152,7 +167,7 @@
         {% if brand %}<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 text-xs px-3 py-1.5 rounded-full font-medium border border-red-100">Marca: {{ brand }}</span>{% endif %}
         {% if condition %}<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 text-xs px-3 py-1.5 rounded-full font-medium border border-red-100">{{ condition|capitalize }}</span>{% endif %}
         {% if price_min or price_max %}<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 text-xs px-3 py-1.5 rounded-full font-medium border border-red-100">Precio {{ price_min or 0 }}–{{ price_max or '∞' }}</span>{% endif %}
-        <a href="/productos{{ '?categoria='+category_slug if category_slug else '' }}" class="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-red-600 px-2 py-1.5">{{ icon('x','w-3.5 h-3.5') }} Limpiar filtros</a>
+        <a href="{{ base_url }}{{ '?categoria='+category_slug if category_slug else '' }}" class="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-red-600 px-2 py-1.5">{{ icon('x','w-3.5 h-3.5') }} Limpiar filtros</a>
       </div>
       {% endif %}
 
@@ -166,10 +181,18 @@
             {% if p.condition == 'USADO' %}<span class="absolute top-2 right-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-medium">Usado</span>{% endif %}
           </div>
           <div class="p-3">
+            {% if p.listing_type == 'MOTO' %}
+            <p class="text-xs text-neutral-500 font-medium mb-0.5 truncate">{{ p.moto_year }} · {{ "{:,}".format(p.moto_km).replace(',', '.') }} km</p>
+            {% else %}
             <p class="text-xs text-neutral-500 font-medium mb-0.5 truncate">{{ p.brand or 'Universal' }}{% if p.model %} · {{ p.model }}{% endif %}</p>
+            {% endif %}
             <p class="text-sm font-semibold text-ink-900 line-clamp-2 leading-tight mb-2">{{ p.title }}</p>
             <p class="font-display text-red-600 font-bold">{{ p.price | ars }}</p>
+            {% if p.listing_type == 'MOTO' and p.seller_kind %}
+            <p class="text-[11px] text-neutral-400 mt-1 truncate">{{ p.seller_kind|capitalize }} · {{ p.company_name }}</p>
+            {% else %}
             <p class="text-[11px] text-neutral-400 mt-1 truncate">{{ p.company_name }}</p>
+            {% endif %}
           </div>
         </a>
         {% endfor %}
@@ -195,10 +218,10 @@
       <!-- Empty state que enseña -->
       <div class="text-center py-20 max-w-md mx-auto">
         <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">{{ icon('search','w-8 h-8','1.5') }}</div>
-        <h3 class="font-display text-xl font-bold text-ink-900 mb-2">No hay repuestos con estos filtros</h3>
-        <p class="text-neutral-500 mb-6">Probá quitar algún filtro, buscar por el modelo de tu moto, o ver el catálogo completo.</p>
+        <h3 class="font-display text-xl font-bold text-ink-900 mb-2">No hay {{ item_noun }} con estos filtros</h3>
+        <p class="text-neutral-500 mb-6">Probá quitar algún filtro, buscar por el modelo de tu moto, o ver el listado completo.</p>
         <div class="flex flex-wrap justify-center gap-2">
-          <a href="/productos" class="btn-primary px-6 py-3 rounded-xl font-medium transition-colors">Ver todos los repuestos</a>
+          <a href="{{ base_url }}" class="btn-primary px-6 py-3 rounded-xl font-medium transition-colors">Ver todo en {{ vertical_label }}</a>
           <a href="/tiendas" class="px-6 py-3 rounded-xl font-medium border border-neutral-200 text-ink-800 hover:border-red-300 transition-colors">Ver tiendas</a>
         </div>
       </div>

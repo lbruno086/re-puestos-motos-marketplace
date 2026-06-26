@@ -48,7 +48,8 @@ jinja_env.filters['tojson'] = lambda v: json.dumps(v, ensure_ascii=False)
 def get_nav_categories():
     conn = get_connection()
     parents = conn.execute(
-        "SELECT * FROM categories WHERE parent_id IS NULL ORDER BY position").fetchall()
+        "SELECT * FROM categories WHERE parent_id IS NULL AND vertical IN ('REPUESTOS','ACCESORIOS') "
+        "ORDER BY position").fetchall()
     result = []
     for p in parents:
         subs = conn.execute(
@@ -189,6 +190,14 @@ class HealthHandler(BaseHandler):
 
 
 class CatalogoHandler(BaseHandler):
+    # Subclases (Avisos/Motos/Servicios) pisan estos para filtrar el mismo listado.
+    LISTING_TYPES = ('PRODUCTO',)
+    VERTICALS = ('REPUESTOS', 'ACCESORIOS')
+    TEMPLATE = 'catalogo.html'
+    VERTICAL_LABEL = 'Repuestos y Accesorios'
+    BASE_URL = '/productos'
+    ITEM_NOUN = 'repuestos'
+
     def get(self):
         conn = get_connection()
         category_slug = self.get_argument('categoria', '')
@@ -197,14 +206,21 @@ class CatalogoHandler(BaseHandler):
         brand = self.get_argument('marca', '')
         compat = self.get_argument('compatible', '')
         tienda = self.get_argument('tienda', '')
+        vendedor_tipo = self.get_argument('vendedor', '')
         order = self.get_argument('orden', 'relevancia')
         price_min = self.get_argument('precio_min', '')
         price_max = self.get_argument('precio_max', '')
         page = max(1, int(self.get_argument('pagina', 1) or 1))
         per_page = 24
 
-        wheres, params = ["p.status='ACTIVO'"], []
+        type_placeholders = ','.join(['?'] * len(self.LISTING_TYPES))
+        wheres = ["p.status='ACTIVO'", f"p.listing_type IN ({type_placeholders})"]
+        params = list(self.LISTING_TYPES)
         current_cat = None
+
+        if vendedor_tipo in ('particular', 'concesionaria'):
+            wheres.append("p.seller_kind=?")
+            params.append(vendedor_tipo.upper())
 
         if category_slug:
             cat = conn.execute("SELECT * FROM categories WHERE slug=?", (category_slug,)).fetchone()
@@ -262,10 +278,12 @@ class CatalogoHandler(BaseHandler):
         brands_available = conn.execute(
             f"SELECT DISTINCT brand FROM products p WHERE {where_sql} AND brand IS NOT NULL ORDER BY brand",
             params).fetchall()
+        vertical_placeholders = ','.join(['?'] * len(self.VERTICALS))
         all_cats = conn.execute(
             "SELECT c.*, COUNT(p.id) as cnt FROM categories c "
             "LEFT JOIN products p ON p.category_id=c.id AND p.status='ACTIVO' "
-            "WHERE c.parent_id IS NULL GROUP BY c.id ORDER BY c.position").fetchall()
+            f"WHERE c.parent_id IS NULL AND c.vertical IN ({vertical_placeholders}) "
+            "GROUP BY c.id ORDER BY c.position", list(self.VERTICALS)).fetchall()
         sellers_for_filter = conn.execute(
             "SELECT sp.user_id as id, sp.company_name, sp.verified, "
             "COUNT(p.id) as cnt FROM seller_profiles sp "
@@ -275,16 +293,61 @@ class CatalogoHandler(BaseHandler):
         conn.close()
 
         total_pages = (total + per_page - 1) // per_page
-        self.render_template('catalogo.html',
+        self.render_template(self.TEMPLATE,
             products=[dict(r) for r in products],
             current_cat=current_cat,
             total=total, page=page, total_pages=total_pages,
             search=search, condition=condition, brand=brand,
             compat=compat, order=order, price_min=price_min, price_max=price_max,
-            category_slug=category_slug, tienda=tienda,
+            category_slug=category_slug, tienda=tienda, vendedor_tipo=vendedor_tipo,
             brands_available=[r['brand'] for r in brands_available],
             all_cats=[dict(r) for r in all_cats],
             sellers_for_filter=[dict(r) for r in sellers_for_filter],
+            vertical_label=self.VERTICAL_LABEL,
+            base_url=self.BASE_URL, item_noun=self.ITEM_NOUN,
+            show_vendedor_filter=(self.LISTING_TYPES == ('MOTO',)),
+            vendedor_tipo_arg=vendedor_tipo,
+        )
+
+
+class AvisosHandler(CatalogoHandler):
+    LISTING_TYPES = ('AVISO',)
+    VERTICALS = ('AVISOS',)
+    VERTICAL_LABEL = 'Avisos'
+    BASE_URL = '/avisos'
+    ITEM_NOUN = 'avisos'
+
+
+class MotosHandler(CatalogoHandler):
+    LISTING_TYPES = ('MOTO',)
+    VERTICALS = ('MOTOS',)
+    VERTICAL_LABEL = 'Motos'
+    BASE_URL = '/motos'
+    ITEM_NOUN = 'motos'
+
+
+class ServiciosHandler(BaseHandler):
+    def get(self):
+        conn = get_connection()
+        rubro = self.get_argument('rubro', '')
+        search = self.get_argument('q', '').strip()
+        wheres, params = ["1=1"], []
+        if rubro:
+            wheres.append("rubro=?"); params.append(rubro)
+        if search:
+            wheres.append("(name LIKE ? OR description LIKE ?)")
+            params += [f'%{search}%', f'%{search}%']
+        where_sql = " AND ".join(wheres)
+        services = conn.execute(
+            f"SELECT * FROM services WHERE {where_sql} ORDER BY verified DESC, id DESC",
+            params).fetchall()
+        rubros = conn.execute(
+            "SELECT DISTINCT rubro FROM services WHERE rubro IS NOT NULL ORDER BY rubro").fetchall()
+        conn.close()
+        self.render_template('servicios.html',
+            services=[dict(r) for r in services],
+            rubro=rubro, search=search,
+            rubros_available=[r['rubro'] for r in rubros],
         )
 
 
@@ -706,6 +769,9 @@ def make_app():
         (r'/healthz',                HealthHandler),
         (r'/',                       HomeHandler),
         (r'/productos',              CatalogoHandler),
+        (r'/avisos',                 AvisosHandler),
+        (r'/motos',                  MotosHandler),
+        (r'/servicios',              ServiciosHandler),
         (r'/producto/([^/]+)',       ProductoHandler),
         (r'/buscar',                 BusquedaHandler),
         (r'/tiendas',                TiendasHandler),

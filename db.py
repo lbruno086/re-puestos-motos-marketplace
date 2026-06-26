@@ -77,6 +77,24 @@ class _PgConnection:
         self._conn.close()
 
 
+def column_exists(conn, table, column):
+    if IS_POSTGRES:
+        row = conn.execute(
+            "SELECT 1 FROM information_schema.columns WHERE table_name=? AND column_name=?",
+            (table, column)).fetchone()
+        return row is not None
+    cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
+    return column in cols
+
+
+def add_column_if_missing(conn, table, column, coltype):
+    """ALTER TABLE ADD COLUMN es idempotente acá: solo corre si la columna no existe.
+    SQLite no soporta ALTER TABLE ADD COLUMN dos veces sobre la misma columna."""
+    if not column_exists(conn, table, column):
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
+        conn.commit()
+
+
 def get_connection():
     if IS_POSTGRES:
         return _PgConnection(DATABASE_URL)
