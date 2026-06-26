@@ -143,6 +143,16 @@ STORES_MDQ = [
     },
 ]
 
+MDP_CENTER = (-38.0023, -57.5575)
+MDP_BARRIOS = ['Centro', 'Puerto', 'La Perla', 'Los Troncos', 'Constitución', 'San Carlos', 'Camet']
+
+def jitter_mdp_coords():
+    """Coordenada aleatoria cerca del centro de Mar del Plata (~6km de radio)."""
+    lat = MDP_CENTER[0] + random.uniform(-0.05, 0.05)
+    lng = MDP_CENTER[1] + random.uniform(-0.05, 0.05)
+    return round(lat, 5), round(lng, 5), random.choice(MDP_BARRIOS)
+
+
 def slugify(t):
     t = str(t).lower()
     for a, b in [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ñ','n'),('ü','u')]:
@@ -455,19 +465,21 @@ def _seed_verticals_if_missing(conn):
                 slug = make_slug(title)
                 price_usd = round(price / USD_RATE, 2)
                 img_url = cat_img('motos-en-venta', random.randint(1, 999))
+                lat, lng, barrio = jitter_mdp_coords()
                 desc = f"{brand} {model} año {year}, {km:,} km. Service al dia, papeles {'al dia' if papers_ok else 'en tramite'}.".replace(',', '.')
                 conn.execute("""
                     INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
                         price,price_usd,condition,brand,model,compatible_models,stock,
                         status,province,city,views,leads_count,featured,part_number,
-                        image_url,images,tags,listing_type,seller_kind,moto_year,moto_cc,moto_km,papers_ok)
-                    VALUES(?,?,?,?,?,?,?,?,'USADO',?,?,?,1,'ACTIVO',?,?,?,?,0,?,?,?,?,'MOTO',?,?,?,?,?)""",
+                        image_url,images,tags,listing_type,seller_kind,moto_year,moto_cc,moto_km,papers_ok,
+                        lat,lng,location_label)
+                    VALUES(?,?,?,?,?,?,?,?,'USADO',?,?,?,1,'ACTIVO',?,?,?,?,0,?,?,?,?,'MOTO',?,?,?,?,?,?,?,?)""",
                     (seller_id, motos_cat_id, title, slug, desc[:100], desc,
                      price, price_usd, brand, model, json.dumps([f'{brand} {model}']),
                      'Buenos Aires', 'Mar del Plata', random.randint(50, 900),
                      random.randint(1, 25), f"MT-{random.randint(10000,99999)}",
                      img_url, json.dumps([img_url]), json.dumps([brand, model]),
-                     seller_kind, year, cc, km, papers_ok))
+                     seller_kind, year, cc, km, papers_ok, lat, lng, barrio))
             conn.commit()
 
     # Avisos demo (publicaciones livianas, sin verificacion de vendedor)
