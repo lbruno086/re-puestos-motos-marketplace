@@ -17,8 +17,15 @@
 
     <!-- IMÁGENES -->
     <div class="lg:col-span-5">
-      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden">
+      <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden relative">
         <img id="mainImg" src="{{ prod.images_list[0] if prod.images_list else prod.image_url }}" alt="{{ prod.title }}" class="w-full aspect-square object-cover">
+        {% if current_user %}
+        <button id="favBtn" type="button" data-product-id="{{ prod.id }}" data-active="{{ '1' if is_favorited else '0' }}"
+          aria-label="Guardar en favoritos"
+          class="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center transition-colors {% if is_favorited %}text-red-600{% else %}text-neutral-400 hover:text-red-600{% endif %}">
+          {{ icon('heart-fill' if is_favorited else 'heart','w-5 h-5') }}
+        </button>
+        {% endif %}
       </div>
       {% if prod.images_list|length > 1 %}
       <div class="flex gap-2 mt-3">
@@ -229,4 +236,24 @@
   {% endif %}
 
 </div>
+
+<script>
+  (function(){
+    var btn = document.getElementById('favBtn');
+    if (!btn) return;
+    function getCookie(name){
+      var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+    btn.addEventListener('click', function(){
+      btn.disabled = true;
+      fetch('/api/favoritos/' + btn.dataset.productId, {
+        method: 'POST',
+        headers: {'X-XSRFToken': getCookie('_xsrf')},
+        credentials: 'same-origin'
+      }).then(function(){ window.location.reload(); })
+        .catch(function(){ btn.disabled = false; });
+    });
+  })();
+</script>
 {% endblock %}

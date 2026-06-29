@@ -185,6 +185,13 @@
           <div class="aspect-square overflow-hidden bg-neutral-50 relative">
             <img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img w-full h-full object-cover">
             {% if p.condition == 'USADO' %}<span class="absolute top-2 right-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-medium">Usado</span>{% endif %}
+            {% if current_user %}
+            <button type="button" class="fav-toggle absolute top-2 left-2 w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center {% if p.id in favorited_ids %}text-red-600{% else %}text-neutral-400{% endif %}"
+              data-product-id="{{ p.id }}" data-active="{{ '1' if p.id in favorited_ids else '0' }}" aria-label="Guardar en favoritos"
+              onclick="event.preventDefault(); event.stopPropagation(); toggleFav(this);">
+              {{ icon('heart-fill' if p.id in favorited_ids else 'heart','w-4 h-4') }}
+            </button>
+            {% endif %}
           </div>
           <div class="p-3">
             {% if p.listing_type == 'MOTO' %}
@@ -250,6 +257,20 @@
     if(cb) cb.addEventListener('click', close);
     if(bd) bd.addEventListener('click', close);
   })();
+
+  function getCookie(name){
+    var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function toggleFav(btn){
+    btn.disabled = true;
+    fetch('/api/favoritos/' + btn.dataset.productId, {
+      method: 'POST',
+      headers: {'X-XSRFToken': getCookie('_xsrf')},
+      credentials: 'same-origin'
+    }).then(function(){ window.location.reload(); })
+      .catch(function(){ btn.disabled = false; });
+  }
 
   (function(){
     var btn = document.getElementById('cercaBtn');

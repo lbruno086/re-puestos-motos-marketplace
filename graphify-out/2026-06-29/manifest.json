@@ -1,7 +1,7 @@
 {
   "app.py": {
-    "mtime": 1782512053.6343322,
-    "ast_hash": "5387ed5246cef298dcb3e4b4f95da686",
+    "mtime": 1782742692.418218,
+    "ast_hash": "0d6f16bb580c4e59b631a841d36c6a80",
     "semantic_hash": ""
   },
   "database.py": {
@@ -80,8 +80,8 @@
     "semantic_hash": "995b91dc8175382c093568fed16cbb7b"
   },
   "templates/catalogo.html": {
-    "mtime": 1782498551.7085247,
-    "ast_hash": "8f0be7a6b88bbfe9fac3032f6bba2b72",
+    "mtime": 1782742643.4527388,
+    "ast_hash": "0c572326b7bf20a2e20596cc6d80a1d8",
     "semantic_hash": ""
   },
   "templates/home.html": {
@@ -95,8 +95,8 @@
     "semantic_hash": "e4daa351a5cddbfef0bc867ebdf9d759"
   },
   "templates/producto.html": {
-    "mtime": 1782493097.3177228,
-    "ast_hash": "b6a1cfc2b048567caca336a106037c85",
+    "mtime": 1782742725.8174362,
+    "ast_hash": "5b6c95832bda77f8193d94bb3a21f80e",
     "semantic_hash": ""
   },
   "templates/tiendas.html": {

@@ -388,6 +388,15 @@ class CatalogoHandler(BaseHandler):
             ).fetchall()
             products = [dict(r) for r in rows]
 
+        user = self.get_current_user()
+        favorited_ids = set()
+        if user and products:
+            ids = [p['id'] for p in products]
+            placeholders = ','.join(['?'] * len(ids))
+            favorited_ids = {r['product_id'] for r in conn.execute(
+                f"SELECT product_id FROM favorites WHERE user_id=? AND product_id IN ({placeholders})",
+                [user['id']] + ids).fetchall()}
+
         brands_available = conn.execute(
             f"SELECT DISTINCT brand FROM products p WHERE {where_sql} AND brand IS NOT NULL ORDER BY brand",
             params).fetchall()
@@ -421,6 +430,7 @@ class CatalogoHandler(BaseHandler):
             show_vendedor_filter=(self.LISTING_TYPES == ('MOTO',)),
             vendedor_tipo_arg=vendedor_tipo,
             cerca=cerca, has_geo=(cerca_lat is not None),
+            favorited_ids=favorited_ids,
         )
 
 
@@ -490,6 +500,16 @@ class ProductoHandler(BaseHandler):
         conn.execute("UPDATE products SET views=views+1 WHERE slug=?", (slug,))
         conn.commit()
 
+        user = self.get_current_user()
+        is_favorited = False
+        if user:
+            if user['id'] != prod['seller_id']:
+                conn.execute("DELETE FROM view_history WHERE user_id=? AND product_id=?", (user['id'], prod['id']))
+                conn.execute("INSERT INTO view_history(user_id,product_id) VALUES(?,?)", (user['id'], prod['id']))
+                conn.commit()
+            is_favorited = bool(conn.execute(
+                "SELECT 1 FROM favorites WHERE user_id=? AND product_id=?", (user['id'], prod['id'])).fetchone())
+
         prod = dict(prod)
         prod['images_list'] = json.loads(prod.get('images') or '[]') or [prod.get('image_url')]
         prod['compat_list'] = json.loads(prod.get('compatible_models') or '[]')
@@ -534,6 +554,7 @@ class ProductoHandler(BaseHandler):
             distance_km=distance_km,
             map_lat=map_lat, map_lng=map_lng,
             is_particular_listing=is_particular_listing,
+            is_favorited=is_favorited,
         )
 
     def post(self, slug):
@@ -609,7 +630,7 @@ class PerfilVendedorHandler(BaseHandler):
     def get(self, uid):
         conn = get_connection()
         seller = conn.execute(
-            "SELECT u.*,sp.* FROM users u JOIN seller_profiles sp ON sp.user_id=u.id WHERE u.id=?",
+            "SELECT sp.* FROM seller_profiles sp WHERE sp.user_id=?",
             (int(uid),)).fetchone()
         if not seller:
             self.set_status(404); self.write("Vendedor no encontrado"); return
@@ -623,9 +644,19 @@ class PerfilVendedorHandler(BaseHandler):
         stats = conn.execute(
             "SELECT COUNT(*) as total, SUM(views) as total_views, SUM(leads_count) as total_leads "
             "FROM products WHERE seller_id=? AND status='ACTIVO'", (int(uid),)).fetchone()
-        conn.close()
+
         s = dict(seller)
         s['brands_list'] = json.loads(s.get('brands_json') or '[]')
+
+        visitor = self.get_current_user()
+        if visitor and visitor['id'] != int(uid) and s.get('lat') is not None and s.get('lng') is not None:
+            conn.execute("DELETE FROM visited_places WHERE user_id=? AND seller_id=?", (visitor['id'], int(uid)))
+            conn.execute(
+                "INSERT INTO visited_places(user_id,seller_id,lat,lng,label) VALUES(?,?,?,?,?)",
+                (visitor['id'], int(uid), s['lat'], s['lng'], s['company_name']))
+            conn.commit()
+
+        conn.close()
         self.render_template('perfil_vendedor.html',
             seller=s,
             products=[dict(p) for p in products],
@@ -821,6 +852,72 @@ class OnboardingHandler(BaseHandler):
         conn.commit()
         conn.close()
         self.redirect('/mi-cuenta/dashboard' if role == 'VENDEDOR' else '/')
+
+
+# ── COMPRADOR: favoritos / historial / lugares ──────────────────────────────────
+class FavoritoToggleHandler(BaseHandler):
+    def post(self, product_id):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        existing = conn.execute(
+            "SELECT id FROM favorites WHERE user_id=? AND product_id=?", (user['id'], int(product_id))).fetchone()
+        if existing:
+            conn.execute("DELETE FROM favorites WHERE id=?", (existing['id'],))
+            favorited = False
+        else:
+            conn.execute("INSERT INTO favorites(user_id,product_id) VALUES(?,?)", (user['id'], int(product_id)))
+            favorited = True
+        conn.commit()
+        conn.close()
+        self.write({'favorited': favorited})
+
+
+class FavoritosHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        rows = conn.execute(
+            """SELECT p.*, COALESCE(sp.company_name,u.name) as company_name, f.created_at as favorited_at
+               FROM favorites f
+               JOIN products p ON p.id=f.product_id
+               LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id
+               LEFT JOIN users u ON u.id=p.seller_id
+               WHERE f.user_id=? ORDER BY f.created_at DESC""", (user['id'],)).fetchall()
+        conn.close()
+        self.render_template('cuenta/favoritos.html', items=[dict(r) for r in rows])
+
+
+class HistorialHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        rows = conn.execute(
+            """SELECT p.*, COALESCE(sp.company_name,u.name) as company_name, MAX(vh.viewed_at) as viewed_at
+               FROM view_history vh
+               JOIN products p ON p.id=vh.product_id
+               LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id
+               LEFT JOIN users u ON u.id=p.seller_id
+               WHERE vh.user_id=? GROUP BY p.id ORDER BY viewed_at DESC LIMIT 60""", (user['id'],)).fetchall()
+        conn.close()
+        self.render_template('cuenta/historial.html', items=[dict(r) for r in rows])
+
+
+class LugaresHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        rows = conn.execute(
+            """SELECT vp.*, COALESCE(sp.company_name,u.name) as company_name, sp.verified
+               FROM visited_places vp
+               JOIN users u ON u.id=vp.seller_id
+               LEFT JOIN seller_profiles sp ON sp.user_id=vp.seller_id
+               WHERE vp.user_id=? ORDER BY vp.visited_at DESC LIMIT 60""", (user['id'],)).fetchall()
+        conn.close()
+        self.render_template('cuenta/lugares.html', items=[dict(r) for r in rows])
 
 
 # ── VENDEDOR DASHBOARD ─────────────────────────────────────────────────────────
@@ -1020,6 +1117,10 @@ def make_app():
         (r'/motos',                  MotosHandler),
         (r'/servicios',              ServiciosHandler),
         (r'/api/ubicacion',          UbicacionHandler),
+        (r'/api/favoritos/(\d+)',    FavoritoToggleHandler),
+        (r'/mi-cuenta/favoritos',    FavoritosHandler),
+        (r'/mi-cuenta/historial',    HistorialHandler),
+        (r'/mi-cuenta/lugares',      LugaresHandler),
         (r'/producto/([^/]+)',       ProductoHandler),
         (r'/buscar',                 BusquedaHandler),
         (r'/tiendas',                TiendasHandler),

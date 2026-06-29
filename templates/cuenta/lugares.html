@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% from "_cuenta_menu.html" import cmenu %}
+{% block title %}Lugares que visitaste — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-8">
+  <h1 class="font-display text-2xl font-extrabold text-ink-900 mb-6">Lugares que visitaste</h1>
+
+  {{ cmenu('lugares') }}
+
+  {% if items %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for place in items %}
+    <a href="/vendedor/{{ place.seller_id }}" class="bg-white rounded-2xl border border-neutral-200 hover:border-red-300 shadow-sm hover:shadow-md overflow-hidden">
+      <div class="h-24 relative bg-gradient-to-br from-neutral-100 to-neutral-200">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <span class="text-red-600">{{ icon('map-pin','w-7 h-7') }}</span>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-1.5 mb-1">
+          <p class="font-bold text-ink-900 text-sm truncate">{{ place.company_name }}</p>
+          {% if place.verified %}<span class="text-red-600 flex-shrink-0">{{ icon('check','w-3.5 h-3.5') }}</span>{% endif %}
+        </div>
+        <p class="text-xs text-neutral-500 truncate">{{ place.label }}</p>
+        <p class="text-[11px] text-neutral-400 mt-2 flex items-center gap-1">{{ icon('clock','w-3 h-3') }} Visitado {{ place.visited_at[:16] }}</p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-20 bg-white rounded-2xl border border-neutral-200">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center">{{ icon('map-pin','w-8 h-8','1.5') }}</div>
+    <h3 class="font-display text-xl font-bold text-ink-900 mb-2">Todavía no visitaste ninguna tienda</h3>
+    <p class="text-neutral-500 mb-6">Cuando abras el perfil de una tienda o concesionaria, va a quedar registrada acá.</p>
+    <a href="/tiendas" class="btn-primary px-6 py-3 rounded-xl font-medium transition-colors inline-block">Ver tiendas</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
