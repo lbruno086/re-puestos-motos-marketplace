@@ -6,7 +6,11 @@
 
 <!-- HERO -->
 <section class="relative bg-ink-950 text-white overflow-hidden">
-  <div class="absolute inset-0 opacity-[0.07]" style="background-image:radial-gradient(circle at 1px 1px, #fff 1px, transparent 0); background-size:22px 22px;"></div>
+  <div class="absolute inset-0">
+    <img src="https://picsum.photos/seed/repuestos-moto-hero/1800/1000" alt="" class="w-full h-full object-cover opacity-40">
+    <div class="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/90 to-ink-950/40"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-ink-950 via-transparent to-transparent"></div>
+  </div>
   <div class="absolute -top-24 -right-24 w-96 h-96 bg-red-600/25 rounded-full blur-3xl"></div>
   <div class="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
     <div class="max-w-3xl">
@@ -21,7 +25,7 @@
       <p class="text-white/70 text-lg mb-8 leading-relaxed max-w-2xl">
         Encontrá la pieza compatible con tu moto y contactá a la tienda local en pocos clics. Motor, frenos, transmisión y más.
       </p>
-      <form action="/buscar" method="get" class="flex max-w-2xl">
+      <form action="/buscar" method="get" class="flex max-w-2xl mb-5">
         <label for="heroSearch" class="sr-only">Buscar repuesto</label>
         <input id="heroSearch" name="q" type="text"
           placeholder="Ej: pastillas CB 190R, cadena YBR 125, batería…"
@@ -30,6 +34,22 @@
           {{ icon('search','w-4 h-4','2.5') }} Buscar
         </button>
       </form>
+
+      <!-- Selector de compatibilidad marca -> modelo -->
+      <form action="/productos" method="get" id="compatForm" class="bg-white/8 border border-white/15 rounded-2xl p-4 max-w-2xl backdrop-blur-sm">
+        <p class="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">{{ icon('bike','w-3.5 h-3.5 text-red-400') }} Buscá por compatibilidad con tu moto</p>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <select id="compatBrand" class="flex-1 px-4 py-3 text-ink-900 text-sm rounded-xl bg-white">
+            <option value="">Marca</option>
+            {% for brand in brand_models.keys() %}<option value="{{ brand }}">{{ brand }}</option>{% endfor %}
+          </select>
+          <select id="compatModel" name="compatible" class="flex-1 px-4 py-3 text-ink-900 text-sm rounded-xl bg-white" disabled>
+            <option value="">Elegí la marca primero</option>
+          </select>
+          <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors whitespace-nowrap">Ver repuestos</button>
+        </div>
+      </form>
+
       <div class="flex flex-wrap items-center gap-2 mt-4 text-sm">
         <span class="text-white/50">Populares:</span>
         {% for term in ['Pastillas CB 190R','Cadena YBR 125','Batería 12V','Casco AGV','Amortiguadores','Carburador Wave'] %}
@@ -39,6 +59,26 @@
     </div>
   </div>
 </section>
+
+<script>
+  (function(){
+    var brandModels = {{ brand_models | tojson }};
+    var brandSel = document.getElementById('compatBrand'), modelSel = document.getElementById('compatModel');
+    if (!brandSel) return;
+    brandSel.addEventListener('change', function(){
+      var models = brandModels[brandSel.value] || [];
+      modelSel.innerHTML = '';
+      if (!models.length) {
+        modelSel.innerHTML = '<option value="">Sin modelos disponibles</option>';
+        modelSel.disabled = true;
+        return;
+      }
+      modelSel.disabled = false;
+      modelSel.innerHTML = '<option value="">Modelo</option>' +
+        models.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
+    });
+  })();
+</script>
 
 <!-- TRUST BAR -->
 <div class="bg-white border-b border-neutral-200 shadow-sm">

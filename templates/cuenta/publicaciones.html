@@ -77,10 +77,6 @@
 
 <script>
   (function(){
-    function getCookie(name){
-      var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
-      return m ? decodeURIComponent(m[1]) : '';
-    }
     document.querySelectorAll('.estado-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
         btn.disabled = true;

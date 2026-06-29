@@ -8,6 +8,7 @@ from google.auth.transport import requests as google_requests
 from datetime import datetime
 from time import monotonic
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup
 from database import get_connection, init_db, slugify, MARCAS_MOTO, USD_RATE, STORES_MDQ
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +55,7 @@ def abs_filter(val):
 jinja_env.filters['ars'] = ars
 jinja_env.filters['usd'] = usd
 jinja_env.filters['abs'] = abs_filter
-jinja_env.filters['tojson'] = lambda v: json.dumps(v, ensure_ascii=False)
+jinja_env.filters['tojson'] = lambda v: Markup(json.dumps(v, ensure_ascii=False).replace('</', '<\\/'))
 
 def get_nav_categories():
     conn = get_connection()
@@ -74,6 +75,19 @@ def get_market_prices():
     rows = conn.execute("SELECT * FROM market_prices ORDER BY id").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def get_brand_models():
+    """Mapa marca -> modelos, para el selector de compatibilidad del home."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT DISTINCT brand, model FROM products "
+        "WHERE brand IS NOT NULL AND brand != '' AND model IS NOT NULL AND model != '' "
+        "ORDER BY brand, model").fetchall()
+    conn.close()
+    result = {}
+    for r in rows:
+        result.setdefault(r['brand'], []).append(r['model'])
+    return result
 
 def haversine_km(lat1, lng1, lat2, lng2):
     from math import radians, sin, cos, asin, sqrt
@@ -231,18 +245,21 @@ class HomeHandler(BaseHandler):
     def get(self):
         conn = get_connection()
         featured = conn.execute(
-            "SELECT p.*,sp.company_name,sp.verified FROM products p "
-            "JOIN seller_profiles sp ON sp.user_id=p.seller_id "
+            "SELECT p.*,COALESCE(sp.company_name,u.name) as company_name,sp.verified FROM products p "
+            "LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id "
+            "LEFT JOIN users u ON u.id=p.seller_id "
             "WHERE p.status='ACTIVO' AND p.featured=1 ORDER BY RANDOM() LIMIT 12"
         ).fetchall()
         most_viewed = conn.execute(
-            "SELECT p.*,sp.company_name,sp.verified FROM products p "
-            "JOIN seller_profiles sp ON sp.user_id=p.seller_id "
+            "SELECT p.*,COALESCE(sp.company_name,u.name) as company_name,sp.verified FROM products p "
+            "LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id "
+            "LEFT JOIN users u ON u.id=p.seller_id "
             "WHERE p.status='ACTIVO' ORDER BY p.views DESC LIMIT 16"
         ).fetchall()
         recent = conn.execute(
-            "SELECT p.*,sp.company_name FROM products p "
-            "JOIN seller_profiles sp ON sp.user_id=p.seller_id "
+            "SELECT p.*,COALESCE(sp.company_name,u.name) as company_name FROM products p "
+            "LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id "
+            "LEFT JOIN users u ON u.id=p.seller_id "
             "WHERE p.status='ACTIVO' ORDER BY p.created_at DESC LIMIT 8"
         ).fetchall()
         cat_counts = conn.execute(
@@ -263,6 +280,7 @@ class HomeHandler(BaseHandler):
             cat_counts=[dict(r) for r in cat_counts],
             total_products=total_products,
             total_sellers=total_sellers,
+            brand_models=get_brand_models(),
         )
 
 
@@ -938,8 +956,16 @@ class HistorialHandler(BaseHandler):
                LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id
                LEFT JOIN users u ON u.id=p.seller_id
                WHERE vh.user_id=? GROUP BY p.id ORDER BY viewed_at DESC LIMIT 60""", (user['id'],)).fetchall()
+        items = [dict(r) for r in rows]
+        favorited_ids = set()
+        if items:
+            ids = [p['id'] for p in items]
+            placeholders = ','.join(['?'] * len(ids))
+            favorited_ids = {r['product_id'] for r in conn.execute(
+                f"SELECT product_id FROM favorites WHERE user_id=? AND product_id IN ({placeholders})",
+                [user['id']] + ids).fetchall()}
         conn.close()
-        self.render_template('cuenta/historial.html', items=[dict(r) for r in rows])
+        self.render_template('cuenta/historial.html', items=items, favorited_ids=favorited_ids)
 
 
 class LugaresHandler(BaseHandler):

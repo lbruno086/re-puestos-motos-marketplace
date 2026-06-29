@@ -19,10 +19,6 @@
             ink:  { 700:'#3d424b', 800:'#33373f', 900:'#23262d', 950:'#15171c' },
             neutral: { 50:'#fafafb', 100:'#f3f4f6', 200:'#e6e7ea', 300:'#d3d5da',
                        400:'#a9adb5', 500:'#8b8f97', 600:'#6b6f78' },
-            // alias de compatibilidad: páginas heredadas usan moto-* → ahora rojo
-            moto: { 50:'#fdeced', 100:'#fbd5d8', 200:'#f6a8af', 300:'#ef7780',
-                    400:'#ea4651', 500:'#e01b24', 600:'#e01b24', 700:'#c01018',
-                    800:'#9a0d13', 900:'#7a0c11' },
           },
           fontFamily: {
             sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -301,6 +297,20 @@
     if(bd) bd.addEventListener('click', close);
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
   })();
+
+  function getCookie(name){
+    var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function toggleFav(btn){
+    btn.disabled = true;
+    fetch('/api/favoritos/' + btn.dataset.productId, {
+      method: 'POST',
+      headers: {'X-XSRFToken': getCookie('_xsrf')},
+      credentials: 'same-origin'
+    }).then(function(){ window.location.reload(); })
+      .catch(function(){ btn.disabled = false; });
+  }
 </script>
 {% block extra_scripts %}{% endblock %}
 </body>

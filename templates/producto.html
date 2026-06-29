@@ -240,20 +240,7 @@
 <script>
   (function(){
     var btn = document.getElementById('favBtn');
-    if (!btn) return;
-    function getCookie(name){
-      var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
-      return m ? decodeURIComponent(m[1]) : '';
-    }
-    btn.addEventListener('click', function(){
-      btn.disabled = true;
-      fetch('/api/favoritos/' + btn.dataset.productId, {
-        method: 'POST',
-        headers: {'X-XSRFToken': getCookie('_xsrf')},
-        credentials: 'same-origin'
-      }).then(function(){ window.location.reload(); })
-        .catch(function(){ btn.disabled = false; });
-    });
+    if (btn) btn.addEventListener('click', function(){ toggleFav(btn); });
   })();
 </script>
 {% endblock %}

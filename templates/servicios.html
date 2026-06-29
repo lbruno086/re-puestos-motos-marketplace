@@ -71,10 +71,6 @@
   (function(){
     var btn = document.getElementById('cercaBtn');
     if (!btn) return;
-    function getCookie(name){
-      var m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
-      return m ? decodeURIComponent(m[1]) : '';
-    }
     btn.addEventListener('click', function(){
       var url = new URL(window.location.href);
       if (btn.dataset.active === '1') {
