@@ -110,6 +110,23 @@
           {% if prod.seller_address %}<div class="flex items-start gap-2"><span class="text-red-600 mt-0.5">{{ icon('map-pin','w-4 h-4') }}</span><span>{{ prod.seller_address }}</span></div>{% endif %}
         </div>
 
+        {% if distance_km is not none %}
+        <div class="flex items-center gap-2 mb-3 bg-red-50 border border-red-100 rounded-xl px-3 py-2 text-xs text-red-700 font-semibold">
+          {{ icon('map-pin','w-4 h-4') }} A {{ '%.1f'|format(distance_km) }} km de tu ubicación
+        </div>
+        {% endif %}
+
+        {% if map_lat and map_lng %}
+        <div class="rounded-xl overflow-hidden border border-neutral-200 mb-4 relative h-28 bg-gradient-to-br from-neutral-100 to-neutral-200">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-red-600">{{ icon('map-pin','w-7 h-7') }}</span>
+          </div>
+          {% if is_particular_listing %}
+          <span class="absolute bottom-1.5 right-1.5 bg-white/90 text-[10px] text-neutral-500 px-2 py-0.5 rounded-full">Ubicación aproximada</span>
+          {% endif %}
+        </div>
+        {% endif %}
+
         {% if prod.seller_whatsapp %}
         <a href="https://wa.me/54{{ prod.seller_whatsapp | urlencode }}?text={{ ('Hola! Vi el repuesto *' ~ prod.title ~ '* en Re-Puestos MDP. ¿Está disponible?') | urlencode }}" target="_blank" rel="noopener"
            class="w-full flex items-center justify-center gap-2 btn-wa font-bold py-3 rounded-xl transition mb-3 text-sm">

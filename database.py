@@ -499,16 +499,17 @@ def _seed_verticals_if_missing(conn):
                 seller_id = random.choice(seller_ids)
                 slug = make_slug(title)
                 img_url = cat_img('avisos-varios', random.randint(1, 999))
+                lat, lng, barrio = jitter_mdp_coords()
                 conn.execute("""
                     INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
                         price,price_usd,condition,stock,status,province,city,views,leads_count,
-                        featured,part_number,image_url,images,tags,listing_type)
-                    VALUES(?,?,?,?,?,?,?,?,'USADO',1,'ACTIVO',?,?,?,?,0,?,?,?,?,'AVISO')""",
+                        featured,part_number,image_url,images,tags,listing_type,lat,lng,location_label)
+                    VALUES(?,?,?,?,?,?,?,?,'USADO',1,'ACTIVO',?,?,?,?,0,?,?,?,?,'AVISO',?,?,?)""",
                     (seller_id, avisos_cat_id, title, slug, desc[:100], desc,
                      price or None, round((price or 0) / USD_RATE, 2),
                      'Buenos Aires', 'Mar del Plata', random.randint(10, 300),
                      random.randint(0, 10), f"AV-{random.randint(10000,99999)}",
-                     img_url, json.dumps([img_url]), json.dumps(['aviso'])))
+                     img_url, json.dumps([img_url]), json.dumps(['aviso']), lat, lng, barrio))
             conn.commit()
 
     # Servicios demo (talleres, gomerias, etc. - tabla propia, no products)

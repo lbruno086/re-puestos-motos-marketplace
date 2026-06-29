@@ -75,6 +75,27 @@ def get_market_prices():
     conn.close()
     return [dict(r) for r in rows]
 
+def haversine_km(lat1, lng1, lat2, lng2):
+    from math import radians, sin, cos, asin, sqrt
+    if None in (lat1, lng1, lat2, lng2):
+        return None
+    r = 6371.0
+    lat1, lng1, lat2, lng2 = map(radians, [lat1, lng1, lat2, lng2])
+    dlat, dlng = lat2 - lat1, lng2 - lng1
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlng / 2) ** 2
+    return r * 2 * asin(sqrt(a))
+
+
+def obfuscate_coords(lat, lng, seed):
+    """Particulares/avisos: punto aproximado (~circulo de privacidad), no la direccion exacta."""
+    if lat is None or lng is None:
+        return lat, lng
+    rnd = random.Random(seed)
+    offset_lat = rnd.uniform(-0.006, 0.006)
+    offset_lng = rnd.uniform(-0.006, 0.006)
+    return round(lat + offset_lat, 4), round(lng + offset_lng, 4)
+
+
 def unique_product_slug(conn, title):
     base = slugify(title) or 'producto'
     candidate = base
@@ -155,6 +176,55 @@ class BaseHandler(tornado.web.RequestHandler):
             self.redirect('/auth/login?next=' + self.request.uri)
             return False
         return True
+
+    def get_geo(self):
+        """lat/lng para 'cerca de mi': query param (un solo click) > cookie > perfil de usuario."""
+        try:
+            qlat, qlng = self.get_argument('lat', ''), self.get_argument('lng', '')
+            if qlat and qlng:
+                return float(qlat), float(qlng)
+        except ValueError:
+            pass
+        clat, clng = self.get_secure_cookie('geo_lat'), self.get_secure_cookie('geo_lng')
+        if clat and clng:
+            try:
+                return float(clat.decode()), float(clng.decode())
+            except ValueError:
+                pass
+        user = self.get_current_user()
+        if user and user.get('lat') is not None and user.get('lng') is not None:
+            return user['lat'], user['lng']
+        return None, None
+
+
+class UbicacionHandler(BaseHandler):
+    """POST /api/ubicacion: guarda lat/lng en cookie (siempre) y en el perfil (si hay login)."""
+    def post(self):
+        try:
+            lat = float(self.get_argument('lat'))
+            lng = float(self.get_argument('lng'))
+        except (ValueError, tornado.web.MissingArgumentError):
+            self.set_status(400)
+            self.write({'error': 'lat/lng invalidos'})
+            return
+        if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+            self.set_status(400)
+            self.write({'error': 'coordenadas fuera de rango'})
+            return
+        label = self.get_argument('label', '')[:120]
+        opts = self.cookie_options()
+        self.set_secure_cookie('geo_lat', str(lat), expires_days=365, **opts)
+        self.set_secure_cookie('geo_lng', str(lng), expires_days=365, **opts)
+        if label:
+            self.set_secure_cookie('geo_label', label, expires_days=365, **opts)
+        user = self.get_current_user()
+        if user:
+            conn = get_connection()
+            conn.execute("UPDATE users SET lat=?, lng=?, location_label=? WHERE id=?",
+                         (lat, lng, label or None, user['id']))
+            conn.commit()
+            conn.close()
+        self.write({'ok': True})
 
 
 class HomeHandler(BaseHandler):
@@ -276,16 +346,47 @@ class CatalogoHandler(BaseHandler):
         }.get(order, 'p.leads_count DESC, p.views DESC')
 
         total = conn.execute(f"SELECT COUNT(*) FROM products p WHERE {where_sql}", params).fetchone()[0]
-        products = conn.execute(
-            f"""SELECT p.*,sp.company_name,sp.verified,sp.rating,
-                c.name as cat_name, c.slug as cat_slug
-                FROM products p
-                JOIN seller_profiles sp ON sp.user_id=p.seller_id
-                JOIN categories c ON c.id=p.category_id
-                WHERE {where_sql} ORDER BY {order_sql}
-                LIMIT ? OFFSET ?""",
-            params + [per_page, (page-1)*per_page]
-        ).fetchall()
+
+        cerca_lat, cerca_lng = self.get_geo()
+        cerca = bool(self.get_argument('cerca', '') and cerca_lat is not None)
+
+        if cerca:
+            # Calculamos distancia en Python (dataset chico): traemos todo lo que matchea
+            # los filtros, ordenamos por distancia y paginamos en memoria.
+            all_rows = conn.execute(
+                f"""SELECT p.*, COALESCE(sp.company_name,u.name) as company_name,
+                    sp.verified, sp.rating, sp.lat as sp_lat, sp.lng as sp_lng,
+                    c.name as cat_name, c.slug as cat_slug
+                    FROM products p
+                    LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id
+                    LEFT JOIN users u ON u.id=p.seller_id
+                    JOIN categories c ON c.id=p.category_id
+                    WHERE {where_sql}""", params).fetchall()
+            enriched = []
+            for r in all_rows:
+                row = dict(r)
+                lat = row.get('lat') if row.get('lat') is not None else row.get('sp_lat')
+                lng = row.get('lng') if row.get('lng') is not None else row.get('sp_lng')
+                row['distance_km'] = haversine_km(cerca_lat, cerca_lng, lat, lng)
+                enriched.append(row)
+            enriched = [r for r in enriched if r['distance_km'] is not None]
+            enriched.sort(key=lambda r: r['distance_km'])
+            total = len(enriched)
+            products = enriched[(page - 1) * per_page: (page - 1) * per_page + per_page]
+        else:
+            rows = conn.execute(
+                f"""SELECT p.*, COALESCE(sp.company_name,u.name) as company_name,
+                    sp.verified, sp.rating,
+                    c.name as cat_name, c.slug as cat_slug
+                    FROM products p
+                    LEFT JOIN seller_profiles sp ON sp.user_id=p.seller_id
+                    LEFT JOIN users u ON u.id=p.seller_id
+                    JOIN categories c ON c.id=p.category_id
+                    WHERE {where_sql} ORDER BY {order_sql}
+                    LIMIT ? OFFSET ?""",
+                params + [per_page, (page-1)*per_page]
+            ).fetchall()
+            products = [dict(r) for r in rows]
 
         brands_available = conn.execute(
             f"SELECT DISTINCT brand FROM products p WHERE {where_sql} AND brand IS NOT NULL ORDER BY brand",
@@ -306,7 +407,7 @@ class CatalogoHandler(BaseHandler):
 
         total_pages = (total + per_page - 1) // per_page
         self.render_template(self.TEMPLATE,
-            products=[dict(r) for r in products],
+            products=products,
             current_cat=current_cat,
             total=total, page=page, total_pages=total_pages,
             search=search, condition=condition, brand=brand,
@@ -319,6 +420,7 @@ class CatalogoHandler(BaseHandler):
             base_url=self.BASE_URL, item_noun=self.ITEM_NOUN,
             show_vendedor_filter=(self.LISTING_TYPES == ('MOTO',)),
             vendedor_tipo_arg=vendedor_tipo,
+            cerca=cerca, has_geo=(cerca_lat is not None),
         )
 
 
@@ -371,7 +473,7 @@ class ProductoHandler(BaseHandler):
                sp.company_name,sp.verified,sp.rating,sp.total_reviews,
                sp.response_rate,sp.response_time,sp.member_since,sp.city as seller_city,
                sp.address as seller_address, sp.phone as seller_phone,
-               sp.whatsapp as seller_whatsapp,
+               sp.whatsapp as seller_whatsapp, sp.lat as sp_lat, sp.lng as sp_lng,
                u.id as seller_uid,
                c.name as cat_name, c.slug as cat_slug,
                pc.name as parent_cat_name, pc.slug as parent_cat_slug
@@ -392,6 +494,19 @@ class ProductoHandler(BaseHandler):
         prod['images_list'] = json.loads(prod.get('images') or '[]') or [prod.get('image_url')]
         prod['compat_list'] = json.loads(prod.get('compatible_models') or '[]')
         prod['tags_list'] = json.loads(prod.get('tags') or '[]')
+
+        item_lat = prod.get('lat') if prod.get('lat') is not None else prod.get('sp_lat')
+        item_lng = prod.get('lng') if prod.get('lng') is not None else prod.get('sp_lng')
+        cerca_lat, cerca_lng = self.get_geo()
+        distance_km = haversine_km(cerca_lat, cerca_lng, item_lat, item_lng)
+        is_particular_listing = prod.get('seller_kind') == 'PARTICULAR' or prod.get('listing_type') == 'AVISO'
+        if item_lat is not None and item_lng is not None:
+            if is_particular_listing:
+                map_lat, map_lng = obfuscate_coords(item_lat, item_lng, seed=prod['id'])
+            else:
+                map_lat, map_lng = item_lat, item_lng
+        else:
+            map_lat, map_lng = None, None
 
         similar = conn.execute(
             """SELECT p.*,sp.company_name,sp.verified FROM products p
@@ -416,6 +531,9 @@ class ProductoHandler(BaseHandler):
             similar=[dict(r) for r in similar],
             reviews=[dict(r) for r in reviews],
             other_seller=[dict(r) for r in other_seller],
+            distance_km=distance_km,
+            map_lat=map_lat, map_lng=map_lng,
+            is_particular_listing=is_particular_listing,
         )
 
     def post(self, slug):
@@ -901,6 +1019,7 @@ def make_app():
         (r'/avisos',                 AvisosHandler),
         (r'/motos',                  MotosHandler),
         (r'/servicios',              ServiciosHandler),
+        (r'/api/ubicacion',          UbicacionHandler),
         (r'/producto/([^/]+)',       ProductoHandler),
         (r'/buscar',                 BusquedaHandler),
         (r'/tiendas',                TiendasHandler),
