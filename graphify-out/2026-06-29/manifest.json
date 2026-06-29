@@ -1,7 +1,7 @@
 {
   "app.py": {
-    "mtime": 1782742692.418218,
-    "ast_hash": "0d6f16bb580c4e59b631a841d36c6a80",
+    "mtime": 1782743639.5157304,
+    "ast_hash": "cf698f124a9177845d71bc81c0db4712",
     "semantic_hash": ""
   },
   "database.py": {
@@ -50,9 +50,9 @@
     "semantic_hash": ""
   },
   "templates/_icons.html": {
-    "mtime": 1782267293.8859384,
-    "ast_hash": "8b4a71624b93cf62b80dbaa986989517",
-    "semantic_hash": "8b4a71624b93cf62b80dbaa986989517"
+    "mtime": 1782743174.2192256,
+    "ast_hash": "33411793ba099ebc12734ff8c2061c7b",
+    "semantic_hash": ""
   },
   "templates/_vendedor_menu.html": {
     "mtime": 1782267293.8859384,
@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "templates/base.html": {
-    "mtime": 1782498621.4063075,
-    "ast_hash": "4fe83f86ea2e3290160153b42e8a4bcc",
+    "mtime": 1782743121.7093813,
+    "ast_hash": "956c693b2b478bdf29bf083eef6288dd",
     "semantic_hash": ""
   },
   "templates/busqueda.html": {
@@ -80,8 +80,8 @@
     "semantic_hash": "995b91dc8175382c093568fed16cbb7b"
   },
   "templates/catalogo.html": {
-    "mtime": 1782742643.4527388,
-    "ast_hash": "0c572326b7bf20a2e20596cc6d80a1d8",
+    "mtime": 1782743319.2387085,
+    "ast_hash": "0aa92a87b3d06a87f26cf9971f18fc8f",
     "semantic_hash": ""
   },
   "templates/home.html": {
@@ -95,8 +95,8 @@
     "semantic_hash": "e4daa351a5cddbfef0bc867ebdf9d759"
   },
   "templates/producto.html": {
-    "mtime": 1782742725.8174362,
-    "ast_hash": "5b6c95832bda77f8193d94bb3a21f80e",
+    "mtime": 1782743272.9406972,
+    "ast_hash": "e1a3be5d4bf010d50964a3d04936c56b",
     "semantic_hash": ""
   },
   "templates/tiendas.html": {
@@ -182,6 +182,26 @@
   "templates/servicios.html": {
     "mtime": 1782498576.0554674,
     "ast_hash": "f734c8e93ce9e7b159f97cc7951afa61",
+    "semantic_hash": ""
+  },
+  "templates/_cuenta_menu.html": {
+    "mtime": 1782743151.560721,
+    "ast_hash": "160b81515ce0f81cf38b30f5e50afe78",
+    "semantic_hash": ""
+  },
+  "templates/cuenta/favoritos.html": {
+    "mtime": 1782743206.879172,
+    "ast_hash": "8ac8af1e536ace3e759628c0b96c849f",
+    "semantic_hash": ""
+  },
+  "templates/cuenta/historial.html": {
+    "mtime": 1782743217.1130652,
+    "ast_hash": "79170ae3856ab9aa5ac0899c891cc4e7",
+    "semantic_hash": ""
+  },
+  "templates/cuenta/lugares.html": {
+    "mtime": 1782743227.81088,
+    "ast_hash": "1c02d5b64cfeedda2cb84d5df5aea50c",
     "semantic_hash": ""
   }
 }

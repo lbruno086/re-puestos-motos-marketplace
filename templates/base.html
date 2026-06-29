@@ -160,7 +160,11 @@
           {% else %}
           <div class="dropdown relative flex-shrink-0">
             <span class="px-3 py-2 text-white/80 hover:text-white text-sm font-medium cursor-pointer">{{ current_user.name.split()[0] }}</span>
-            <div class="dropdown-menu hidden absolute top-full right-0 mt-1 bg-white text-ink-800 border border-neutral-200 rounded-xl shadow-xl p-2 min-w-[180px] z-50">
+            <div class="dropdown-menu hidden absolute top-full right-0 mt-1 bg-white text-ink-800 border border-neutral-200 rounded-xl shadow-xl p-2 min-w-[200px] z-50">
+              <a href="/mi-cuenta/publicaciones" class="block px-3 py-2 text-sm text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors font-semibold">Mis publicaciones</a>
+              <a href="/mi-cuenta/publicar-aviso" class="block px-3 py-2 text-sm text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">Publicar aviso</a>
+              <a href="/mi-cuenta/publicar-moto" class="block px-3 py-2 text-sm text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">Publicar moto</a>
+              <div class="my-1.5 border-t border-neutral-100"></div>
               <a href="/mi-cuenta/favoritos" class="block px-3 py-2 text-sm text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">Mis favoritos</a>
               <a href="/mi-cuenta/historial" class="block px-3 py-2 text-sm text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">Vistos recientemente</a>
               <a href="/mi-cuenta/lugares" class="block px-3 py-2 text-sm text-ink-800 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors">Lugares que visitaste</a>
@@ -221,6 +225,9 @@
       {% if current_user.role in ('VENDEDOR','ADMIN') %}
       <a href="/mi-cuenta/dashboard" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Mi Cuenta</a>
       {% else %}
+      <a href="/mi-cuenta/publicaciones" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Mis publicaciones</a>
+      <a href="/mi-cuenta/publicar-aviso" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Publicar aviso</a>
+      <a href="/mi-cuenta/publicar-moto" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Publicar moto</a>
       <a href="/mi-cuenta/favoritos" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Mis favoritos</a>
       <a href="/mi-cuenta/historial" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Vistos recientemente</a>
       <a href="/mi-cuenta/lugares" class="block px-3 py-2.5 rounded-lg text-white/90 hover:bg-white/10 font-medium">Lugares que visitaste</a>

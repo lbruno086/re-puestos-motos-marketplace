@@ -462,17 +462,54 @@ class ServiciosHandler(BaseHandler):
             wheres.append("(name LIKE ? OR description LIKE ?)")
             params += [f'%{search}%', f'%{search}%']
         where_sql = " AND ".join(wheres)
-        services = conn.execute(
+        rows = conn.execute(
             f"SELECT * FROM services WHERE {where_sql} ORDER BY verified DESC, id DESC",
             params).fetchall()
         rubros = conn.execute(
             "SELECT DISTINCT rubro FROM services WHERE rubro IS NOT NULL ORDER BY rubro").fetchall()
         conn.close()
+
+        cerca_lat, cerca_lng = self.get_geo()
+        cerca = bool(self.get_argument('cerca', '') and cerca_lat is not None)
+        services = [dict(r) for r in rows]
+        for s in services:
+            s['distance_km'] = haversine_km(cerca_lat, cerca_lng, s.get('lat'), s.get('lng'))
+        if cerca:
+            services = [s for s in services if s['distance_km'] is not None]
+            services.sort(key=lambda s: s['distance_km'])
+
         self.render_template('servicios.html',
-            services=[dict(r) for r in services],
+            services=services,
             rubro=rubro, search=search,
             rubros_available=[r['rubro'] for r in rubros],
+            cerca=cerca, has_geo=(cerca_lat is not None),
         )
+
+
+class ServicioDetailHandler(BaseHandler):
+    def get(self, sid):
+        conn = get_connection()
+        svc = conn.execute(
+            "SELECT s.*, COALESCE(sp.company_name, u.name) as seller_name FROM services s "
+            "LEFT JOIN seller_profiles sp ON sp.user_id=s.seller_id "
+            "LEFT JOIN users u ON u.id=s.seller_id WHERE s.id=?", (int(sid),)).fetchone()
+        if not svc:
+            self.set_status(404); self.write("Servicio no encontrado"); return
+        svc = dict(svc)
+
+        cerca_lat, cerca_lng = self.get_geo()
+        distance_km = haversine_km(cerca_lat, cerca_lng, svc.get('lat'), svc.get('lng'))
+
+        visitor = self.get_current_user()
+        if visitor and visitor['id'] != svc['seller_id'] and svc.get('lat') is not None and svc.get('lng') is not None:
+            conn.execute("DELETE FROM visited_places WHERE user_id=? AND seller_id=?", (visitor['id'], svc['seller_id']))
+            conn.execute(
+                "INSERT INTO visited_places(user_id,seller_id,lat,lng,label) VALUES(?,?,?,?,?)",
+                (visitor['id'], svc['seller_id'], svc['lat'], svc['lng'], svc['name']))
+            conn.commit()
+
+        conn.close()
+        self.render_template('servicio.html', svc=svc, distance_km=distance_km)
 
 
 class ProductoHandler(BaseHandler):
@@ -920,6 +957,134 @@ class LugaresHandler(BaseHandler):
         self.render_template('cuenta/lugares.html', items=[dict(r) for r in rows])
 
 
+# ── PUBLICACIONES LIVIANAS: motos (particular/concesionaria) y avisos ──────────
+class PublicarMotoHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        self.render_template('cuenta/publicar_moto.html', error=None)
+
+    def post(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        title = self.get_argument('title', '').strip()
+        if not title:
+            self.render_template('cuenta/publicar_moto.html', error='El titulo es obligatorio.')
+            conn.close(); return
+
+        cat = conn.execute("SELECT id FROM categories WHERE slug='motos-en-venta'").fetchone()
+        slug = unique_product_slug(conn, title)
+        price = float(self.get_argument('price', 0) or 0)
+        image_url = self.get_argument('image_url', '').strip() or \
+            f'https://picsum.photos/seed/{slug}/800/600'
+        seller_kind = 'CONCESIONARIA' if user['role'] in ('VENDEDOR', 'ADMIN') else 'PARTICULAR'
+        try:
+            lat = float(self.get_argument('lat', '') or 0) or None
+            lng = float(self.get_argument('lng', '') or 0) or None
+        except ValueError:
+            lat, lng = None, None
+
+        conn.execute("""
+            INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
+                price,price_usd,condition,brand,model,stock,status,province,city,
+                image_url,images,listing_type,seller_kind,moto_year,moto_cc,moto_km,papers_ok,
+                lat,lng,location_label)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,1,'ACTIVO','Buenos Aires','Mar del Plata',
+                ?,?,'MOTO',?,?,?,?,?,?,?,?)""",
+            (user['id'], cat['id'], title, slug,
+             self.get_argument('short_desc', '').strip() or title,
+             self.get_argument('description', '').strip(),
+             price, round(price / USD_RATE, 2),
+             self.get_argument('condition', 'USADO'),
+             self.get_argument('brand', '').strip(),
+             self.get_argument('model', '').strip(),
+             image_url, json.dumps([image_url]),
+             seller_kind,
+             int(self.get_argument('moto_year', '') or 0) or None,
+             int(self.get_argument('moto_cc', '') or 0) or None,
+             int(self.get_argument('moto_km', '') or 0) or None,
+             1 if self.get_argument('papers_ok', '') == 'on' else 0,
+             lat, lng, self.get_argument('location_label', '').strip() or None))
+        conn.commit()
+        conn.close()
+        self.flash('Moto publicada correctamente.')
+        self.redirect('/mi-cuenta/publicaciones')
+
+
+class PublicarAvisoHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        self.render_template('cuenta/publicar_aviso.html', error=None)
+
+    def post(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        title = self.get_argument('title', '').strip()
+        if not title:
+            self.render_template('cuenta/publicar_aviso.html', error='El titulo es obligatorio.')
+            conn.close(); return
+
+        cat = conn.execute("SELECT id FROM categories WHERE slug='avisos-varios'").fetchone()
+        slug = unique_product_slug(conn, title)
+        price = float(self.get_argument('price', 0) or 0)
+        image_url = self.get_argument('image_url', '').strip() or \
+            f'https://picsum.photos/seed/{slug}/800/600'
+        try:
+            lat = float(self.get_argument('lat', '') or 0) or None
+            lng = float(self.get_argument('lng', '') or 0) or None
+        except ValueError:
+            lat, lng = None, None
+
+        conn.execute("""
+            INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
+                price,price_usd,condition,stock,status,province,city,
+                image_url,images,listing_type,seller_kind,lat,lng,location_label)
+            VALUES(?,?,?,?,?,?,?,?,?,1,'ACTIVO','Buenos Aires','Mar del Plata',
+                ?,?,'AVISO','PARTICULAR',?,?,?)""",
+            (user['id'], cat['id'], title, slug,
+             self.get_argument('short_desc', '').strip() or title,
+             self.get_argument('description', '').strip(),
+             price or None, round(price / USD_RATE, 2) if price else None,
+             self.get_argument('condition', 'USADO'),
+             image_url, json.dumps([image_url]),
+             lat, lng, self.get_argument('location_label', '').strip() or None))
+        conn.commit()
+        conn.close()
+        self.flash('Aviso publicado correctamente.')
+        self.redirect('/mi-cuenta/publicaciones')
+
+
+class MisPublicacionesHandler(BaseHandler):
+    def get(self):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        conn = get_connection()
+        rows = conn.execute(
+            "SELECT * FROM products WHERE seller_id=? AND listing_type IN ('AVISO','MOTO') "
+            "ORDER BY created_at DESC", (user['id'],)).fetchall()
+        conn.close()
+        self.render_template('cuenta/publicaciones.html', items=[dict(r) for r in rows])
+
+
+class EstadoPublicacionHandler(BaseHandler):
+    def post(self, product_id):
+        if not self.require_login(): return
+        user = self.get_current_user()
+        estado = self.get_argument('estado', '')
+        if estado not in ('ACTIVO', 'PAUSADO', 'VENCIDO'):
+            self.set_status(400); self.write({'error': 'estado invalido'}); return
+        conn = get_connection()
+        owned = conn.execute("SELECT id FROM products WHERE id=? AND seller_id=?",
+                              (int(product_id), user['id'])).fetchone()
+        if not owned:
+            conn.close(); self.set_status(404); self.write({'error': 'no encontrado'}); return
+        conn.execute("UPDATE products SET status=? WHERE id=?", (estado, int(product_id)))
+        conn.commit()
+        conn.close()
+        self.write({'ok': True, 'status': estado})
+
+
 # ── VENDEDOR DASHBOARD ─────────────────────────────────────────────────────────
 class DashboardHandler(BaseHandler):
     def get(self):
@@ -1116,11 +1281,16 @@ def make_app():
         (r'/avisos',                 AvisosHandler),
         (r'/motos',                  MotosHandler),
         (r'/servicios',              ServiciosHandler),
+        (r'/servicio/(\d+)',         ServicioDetailHandler),
         (r'/api/ubicacion',          UbicacionHandler),
         (r'/api/favoritos/(\d+)',    FavoritoToggleHandler),
         (r'/mi-cuenta/favoritos',    FavoritosHandler),
         (r'/mi-cuenta/historial',    HistorialHandler),
         (r'/mi-cuenta/lugares',      LugaresHandler),
+        (r'/mi-cuenta/publicar-moto',  PublicarMotoHandler),
+        (r'/mi-cuenta/publicar-aviso', PublicarAvisoHandler),
+        (r'/mi-cuenta/publicaciones',  MisPublicacionesHandler),
+        (r'/api/publicaciones/(\d+)/estado', EstadoPublicacionHandler),
         (r'/producto/([^/]+)',       ProductoHandler),
         (r'/buscar',                 BusquedaHandler),
         (r'/tiendas',                TiendasHandler),

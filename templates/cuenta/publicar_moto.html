@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Publicar moto — Re-Puestos MDP{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6 md:py-8">
+  <div class="mb-6">
+    <a href="/mi-cuenta/publicaciones" class="text-sm text-neutral-500 hover:text-red-600 inline-flex items-center gap-1">{{ icon('chevron-right','w-4 h-4 rotate-180') }} Volver a mis publicaciones</a>
+    <h1 class="font-display text-2xl font-extrabold text-ink-900 mt-2">Publicar moto</h1>
+    <p class="text-neutral-500 text-sm mt-1">
+      {% if current_user and current_user.role in ('VENDEDOR','ADMIN') %}Se publica como <strong>concesionaria</strong> ({{ current_user.name }}).
+      {% else %}Se publica como <strong>particular</strong>.{% endif %}
+    </p>
+  </div>
+
+  {% if error %}
+  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2"><span class="flex-shrink-0">{{ icon('x','w-4 h-4') }}</span> {{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/mi-cuenta/publicar-moto" class="space-y-6" id="motoForm">
+    {{ xsrf_form_html | safe }}
+    <input type="hidden" name="lat" id="motoLat">
+    <input type="hidden" name="lng" id="motoLng">
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+      <h2 class="font-bold text-ink-900 text-lg border-b border-neutral-200 pb-3">Datos de la moto</h2>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Título *</label>
+        <input name="title" required placeholder="Ej: Honda Wave 110 2021"
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Marca</label>
+          <input name="brand" list="marcas-list" placeholder="Honda, Yamaha, Zanella..."
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+          <datalist id="marcas-list">{% for m in MARCAS_MOTO %}<option value="{{ m }}">{% endfor %}</datalist>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Modelo</label>
+          <input name="model" placeholder="Ej: Wave 110" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Año</label>
+          <input name="moto_year" type="number" min="1980" max="2030" placeholder="2021"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Cilindrada (cc)</label>
+          <input name="moto_cc" type="number" min="0" placeholder="110"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Kilometraje</label>
+          <input name="moto_km" type="number" min="0" placeholder="12500"
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        </div>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" name="papers_ok" class="rounded border-gray-300 text-red-600"> Papeles al día
+      </label>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Descripción</label>
+        <textarea name="description" rows="4" placeholder="Estado general, service, detalles..."
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500 resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+      <h2 class="font-bold text-ink-900 text-lg border-b border-neutral-200 pb-3">Precio y ubicación</h2>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Precio (ARS) *</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+            <input name="price" type="number" min="0" required placeholder="0"
+              class="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Condición</label>
+          <select name="condition" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500 bg-white">
+            <option value="USADO">Usado</option>
+            <option value="NUEVO">Nuevo</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">URL de imagen</label>
+        <input name="image_url" type="url" placeholder="https://..." class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Zona / barrio</label>
+        <input name="location_label" id="motoLabel" placeholder="Ej: Centro, Mar del Plata" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:border-moto-500">
+        <button type="button" id="useGeoBtn" class="mt-2 inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium">
+          {{ icon('map-pin','w-3.5 h-3.5') }} Usar mi ubicación actual
+        </button>
+        <span id="geoStatus" class="text-xs text-neutral-400 ml-2"></span>
+      </div>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" class="flex-1 btn-primary py-3.5 rounded-xl font-bold transition-colors">Publicar moto</button>
+      <a href="/mi-cuenta/publicaciones" class="px-6 py-3.5 border border-gray-200 hover:border-gray-300 text-gray-600 rounded-xl font-medium text-sm transition-colors">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function(){
+    var btn = document.getElementById('useGeoBtn'), status = document.getElementById('geoStatus');
+    if (!btn) return;
+    btn.addEventListener('click', function(){
+      if (!navigator.geolocation) { status.textContent = 'Tu navegador no soporta geolocalización.'; return; }
+      status.textContent = 'Buscando...';
+      navigator.geolocation.getCurrentPosition(function(pos){
+        document.getElementById('motoLat').value = pos.coords.latitude;
+        document.getElementById('motoLng').value = pos.coords.longitude;
+        status.textContent = 'Ubicación capturada ✓';
+      }, function(){ status.textContent = 'No pudimos obtener tu ubicación.'; });
+    });
+  })();
+</script>
+{% endblock %}
