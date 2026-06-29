@@ -1,16 +1,16 @@
 # Graph Report - re-puestos  (2026-06-29)
 
 ## Corpus Check
-- 15 files · ~38,976 words
+- 15 files · ~39,103 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 329 nodes · 559 edges · 24 communities (19 shown, 5 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 52 edges (avg confidence: 0.81)
+- 319 nodes · 541 edges · 23 communities (18 shown, 5 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 48 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `afcb81ca`
+- Built from commit: `86ceae7d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -35,22 +35,21 @@
 - [[_COMMUNITY_Community 17|Community 17]]
 - [[_COMMUNITY_Community 18|Community 18]]
 - [[_COMMUNITY_Community 19|Community 19]]
-- [[_COMMUNITY_Community 20|Community 20]]
 - [[_COMMUNITY_Community 21|Community 21]]
 - [[_COMMUNITY_Community 22|Community 22]]
 - [[_COMMUNITY_Community 23|Community 23]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `BaseHandler` - 41 edges
-2. `get_connection()` - 40 edges
+2. `get_connection()` - 41 edges
 3. `Hallazgos detallados` - 14 edges
 4. `Changelog` - 12 edges
 5. `plan_pulido.md — Plan de depuración y pulido de Re-Puestos MDP` - 12 edges
 6. `init_db()` - 10 edges
 7. `spec_pulido.md — Re-Puestos MDP como "Agrofy de las motos"` - 10 edges
 8. `Vendedor Dashboard Template` - 10 edges
-9. `Editar Producto Template` - 10 edges
-10. `Design` - 9 edges
+9. `Design` - 9 edges
+10. `_PgConnection` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Compatibilidad y localia primera clase` --rationale_for--> `CatalogoHandler`  [INFERRED]
@@ -77,15 +76,15 @@
 - **Seller Dashboard Shared Layout (base + icon + vmenu)** — vendedor_base_template, vendedor_icons_macro, vendedor_vmenu_macro, vendedor_dashboard_template, vendedor_productos_template, vendedor_leads_template [EXTRACTED 1.00]
 - **Product CRUD Form Flow (new/edit forms, endpoints, xsrf)** — vendedor_nuevo_producto_template, vendedor_editar_producto_template, vendedor_endpoint_nuevo, vendedor_endpoint_editar, vendedor_xsrf_form, vendedor_product_form_ui [INFERRED 0.85]
 
-## Communities (24 total, 5 thin omitted)
+## Communities (23 total, 5 thin omitted)
 
 ### Community 1 - "App Tornado y Rutas"
 Cohesion: 0.07
-Nodes (35): AvisosHandler, BaseHandler, BusquedaHandler, CatalogoHandler, DashboardHandler, EstadoPublicacionHandler, FavoritosHandler, FavoritoToggleHandler (+27 more)
+Nodes (33): AvisosHandler, BaseHandler, BusquedaHandler, CatalogoHandler, DashboardHandler, EstadoPublicacionHandler, FavoritosHandler, FavoritoToggleHandler (+25 more)
 
 ### Community 2 - "Panel del Vendedor (Templates)"
-Cohesion: 0.19
-Nodes (22): base.html Layout, Categories Data (cats), Vendedor Dashboard Template, Editar Producto Template, POST /mi-cuenta/editar/{id}, POST /mi-cuenta/nuevo, POST /mi-cuenta/perfil, icon() Macro (_icons.html) (+14 more)
+Cohesion: 0.26
+Nodes (14): base.html Layout, Vendedor Dashboard Template, POST /mi-cuenta/perfil, icon() Macro (_icons.html), Lead Data (leads), Leads (Consultas) Template, Perfil de Tienda Template, Product Data (prod/products) (+6 more)
 
 ### Community 3 - "DB, Seeding y Arranque"
 Cohesion: 0.18
@@ -93,7 +92,7 @@ Nodes (19): cat_img(), img(), init_db(), jitter_mdp_coords(), make_slug(), migra
 
 ### Community 4 - "Modelo de Datos SQLite"
 Cohesion: 0.12
-Nodes (10): EditarProductoHandler, get_market_prices(), get_nav_categories(), haversine_km(), NuevoProductoHandler, OnboardingHandler, PerfilTiendaHandler, lat/lng para 'cerca de mi': query param (un solo click) > cookie > perfil de usu (+2 more)
+Nodes (14): EditarProductoHandler, get_brand_models(), get_market_prices(), get_nav_categories(), haversine_km(), NuevoProductoHandler, OnboardingHandler, PerfilTiendaHandler (+6 more)
 
 ### Community 5 - "Auth UI y Layout Base"
 Cohesion: 0.40
@@ -151,16 +150,12 @@ Nodes (4): Despliegue web, Ejecutar local, Re-Puestos MDP, Variables de entorno
 Cohesion: 0.50
 Nodes (3): Produccion, Ruta recomendada, Variables
 
-### Community 20 - "Community 20"
-Cohesion: 0.50
-Nodes (4): Category grid (cat_counts), Featured + most-viewed products, Hero + search + popular terms, home.html (landing)
-
 ## Ambiguous Edges - Review These
 - `get_db()` → `CSV_PATH`  [AMBIGUOUS]
   load_productos.py · relation: references
 
 ## Knowledge Gaps
-- **122 isolated node(s):** `Added`, `Changed`, `Added`, `Changed`, `Added` (+117 more)
+- **117 isolated node(s):** `Added`, `Changed`, `Added`, `Changed`, `Added` (+112 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -170,14 +165,14 @@ _Questions this graph is uniquely positioned to answer:_
 - **What is the exact relationship between `get_db()` and `CSV_PATH`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
 - **Why does `get_connection()` connect `Modelo de Datos SQLite` to `App Tornado y Rutas`, `DB, Seeding y Arranque`, `Sistema de Iconos y Ticker`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
+  _High betweenness centrality (0.058) - this node is a cross-community bridge._
 - **Why does `BaseHandler` connect `App Tornado y Rutas` to `Modelo de Datos SQLite`?**
-  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **Why does `Changelog` connect `Home y Navegacion` to `Community 15`?**
-  _High betweenness centrality (0.015) - this node is a cross-community bridge._
-- **Are the 35 inferred relationships involving `get_connection()` (e.g. with `.get_current_user()` and `.get()`) actually correct?**
-  _`get_connection()` has 35 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Particulares/avisos: punto aproximado (~circulo de privacidad), no la direccion`, `lat/lng para 'cerca de mi': query param (un solo click) > cookie > perfil de usu`, `POST /api/ubicacion: guarda lat/lng en cookie (siempre) y en el perfil (si hay l` to the rest of the system?**
-  _139 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Are the 36 inferred relationships involving `get_connection()` (e.g. with `.get_current_user()` and `.get()`) actually correct?**
+  _`get_connection()` has 36 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `Mapa marca -> modelos, para el selector de compatibilidad del home.`, `Particulares/avisos: punto aproximado (~circulo de privacidad), no la direccion`, `lat/lng para 'cerca de mi': query param (un solo click) > cookie > perfil de usu` to the rest of the system?**
+  _135 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `App Tornado y Rutas` be split into smaller, more focused modules?**
-  _Cohesion score 0.07092198581560284 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07020408163265306 - nodes in this community are weakly interconnected._

@@ -4,7 +4,7 @@
 {% macro product_card(p, current_user=none, favorited_ids=[], cerca=false) -%}
 <a href="/producto/{{ p.slug }}" class="product-card group bg-white rounded-2xl border border-neutral-200 hover:border-red-300 shadow-sm hover:shadow-md overflow-hidden">
   <div class="aspect-square overflow-hidden bg-neutral-50 relative">
-    <img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img w-full h-full object-cover">
+    <img src="{{ p.image_url }}" alt="{{ p.title }}" loading="lazy" class="card-img img-skel w-full h-full object-cover" onload="this.classList.remove('img-skel')">
     {% if p.condition == 'USADO' %}<span class="absolute top-2 right-2 bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-medium">Usado</span>{% endif %}
     {% if current_user %}
     <button type="button" class="fav-toggle absolute top-2 left-2 w-11 h-11 rounded-full bg-white/90 shadow-sm flex items-center justify-center {% if p.id in favorited_ids %}text-red-600{% else %}text-neutral-400{% endif %}"

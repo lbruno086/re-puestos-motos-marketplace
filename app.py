@@ -748,7 +748,7 @@ class LoginHandler(BaseHandler):
 
 class RegisterHandler(BaseHandler):
     def get(self):
-        self.render_template('auth/register.html', error=None)
+        self.render_template('auth/register.html', errors={})
 
     def post(self):
         if not self.enforce_rate_limit('register', 5, 3600):
@@ -757,17 +757,31 @@ class RegisterHandler(BaseHandler):
         email = self.get_argument('email', '').strip().lower()
         password = self.get_argument('password', '').strip()
         role = self.get_argument('role', 'COMPRADOR')
+        if role not in ('COMPRADOR', 'VENDEDOR'):
+            role = 'COMPRADOR'
         company = self.get_argument('company_name', '').strip()
 
-        if not name or not email or len(password) < 6:
-            self.render_template('auth/register.html', error='Completa todos los campos correctamente.')
-            return
+        def rerender(errors):
+            self.render_template('auth/register.html', errors=errors,
+                                  name=name, email=email, role=role, company_name=company)
+
+        errors = {}
+        if not name:
+            errors['name'] = 'Ingresá tu nombre completo.'
+        if not email:
+            errors['email'] = 'Ingresá tu email.'
+        if len(password) < 6:
+            errors['password'] = 'La contraseña debe tener al menos 6 caracteres.'
+        if role == 'VENDEDOR' and not company:
+            errors['company_name'] = 'Ingresá el nombre de tu tienda.'
 
         conn = get_connection()
-        existing = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
-        if existing:
+        if not errors.get('email') and conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone():
+            errors['email'] = 'Ya existe una cuenta con ese email.'
+
+        if errors:
             conn.close()
-            self.render_template('auth/register.html', error='Ya existe una cuenta con ese email.')
+            rerender(errors)
             return
 
         pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -987,16 +1001,21 @@ class LugaresHandler(BaseHandler):
 class PublicarMotoHandler(BaseHandler):
     def get(self):
         if not self.require_login(): return
-        self.render_template('cuenta/publicar_moto.html', error=None)
+        self.render_template('cuenta/publicar_moto.html', errors={}, form={})
 
     def post(self):
         if not self.require_login(): return
         user = self.get_current_user()
         conn = get_connection()
-        title = self.get_argument('title', '').strip()
+        form = {k: self.get_argument(k, '') for k in (
+            'title', 'brand', 'model', 'moto_year', 'moto_cc', 'moto_km',
+            'description', 'price', 'condition', 'image_url', 'location_label')}
+        title = form['title'].strip()
         if not title:
-            self.render_template('cuenta/publicar_moto.html', error='El titulo es obligatorio.')
-            conn.close(); return
+            conn.close()
+            self.render_template('cuenta/publicar_moto.html',
+                                 errors={'title': 'El título es obligatorio.'}, form=form)
+            return
 
         cat = conn.execute("SELECT id FROM categories WHERE slug='motos-en-venta'").fetchone()
         slug = unique_product_slug(conn, title)
@@ -1040,16 +1059,20 @@ class PublicarMotoHandler(BaseHandler):
 class PublicarAvisoHandler(BaseHandler):
     def get(self):
         if not self.require_login(): return
-        self.render_template('cuenta/publicar_aviso.html', error=None)
+        self.render_template('cuenta/publicar_aviso.html', errors={}, form={})
 
     def post(self):
         if not self.require_login(): return
         user = self.get_current_user()
         conn = get_connection()
-        title = self.get_argument('title', '').strip()
+        form = {k: self.get_argument(k, '') for k in (
+            'title', 'description', 'price', 'condition', 'image_url', 'location_label')}
+        title = form['title'].strip()
         if not title:
-            self.render_template('cuenta/publicar_aviso.html', error='El titulo es obligatorio.')
-            conn.close(); return
+            conn.close()
+            self.render_template('cuenta/publicar_aviso.html',
+                                 errors={'title': 'El título es obligatorio.'}, form=form)
+            return
 
         cat = conn.execute("SELECT id FROM categories WHERE slug='avisos-varios'").fetchone()
         slug = unique_product_slug(conn, title)
@@ -1156,7 +1179,7 @@ class NuevoProductoHandler(BaseHandler):
         cats = conn.execute("SELECT * FROM categories ORDER BY parent_id NULLS FIRST, position").fetchall()
         conn.close()
         self.render_template('vendedor/nuevo_producto.html',
-                             cats=[dict(c) for c in cats], error=None)
+                             cats=[dict(c) for c in cats], errors={}, form={})
 
     def post(self):
         if not self.require_seller(): return
@@ -1164,11 +1187,16 @@ class NuevoProductoHandler(BaseHandler):
         conn = get_connection()
         cats = conn.execute("SELECT * FROM categories ORDER BY parent_id NULLS FIRST, position").fetchall()
 
-        title = self.get_argument('title', '').strip()
+        form = {k: self.get_argument(k, '') for k in (
+            'title', 'category_id', 'condition', 'brand', 'model', 'compatible_models',
+            'short_desc', 'description', 'price', 'stock', 'part_number', 'image_url')}
+        title = form['title'].strip()
         if not title:
+            conn.close()
             self.render_template('vendedor/nuevo_producto.html',
-                                 cats=[dict(c) for c in cats], error='El titulo es obligatorio.')
-            conn.close(); return
+                                 cats=[dict(c) for c in cats],
+                                 errors={'title': 'El título es obligatorio.'}, form=form)
+            return
 
         slug = unique_product_slug(conn, title)
         price = float(self.get_argument('price', 0) or 0)

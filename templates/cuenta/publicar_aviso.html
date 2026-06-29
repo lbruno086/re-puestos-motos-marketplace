@@ -10,9 +10,8 @@
     <p class="text-neutral-500 text-sm mt-1">Avisos clasificados: compro, vendo, busco repuesto, servicio puntual. Sin verificación de vendedor.</p>
   </div>
 
-  {% if error %}
-  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2"><span class="flex-shrink-0">{{ icon('x','w-4 h-4') }}</span> {{ error }}</div>
-  {% endif %}
+  {% set errors = errors or {} %}
+  {% set form = form or {} %}
 
   <form method="post" action="/mi-cuenta/publicar-aviso" class="space-y-6">
     {{ xsrf_form_html | safe }}
@@ -24,14 +23,15 @@
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Título *</label>
-        <input name="title" required placeholder="Ej: Compro moto chocada para repuestos"
-          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        <input name="title" required value="{{ form.title or '' }}" placeholder="Ej: Compro moto chocada para repuestos"
+          class="w-full px-4 py-3 border {{ 'border-red-400' if errors.title else 'border-neutral-200' }} rounded-xl text-sm focus:border-red-500">
+        {% if errors.title %}<p class="text-xs text-red-600 mt-1">{{ errors.title }}</p>{% endif %}
       </div>
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Descripción</label>
         <textarea name="description" rows="4" placeholder="Contá los detalles de tu aviso..."
-          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500 resize-none"></textarea>
+          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500 resize-none">{{ form.description or '' }}</textarea>
       </div>
 
       <div class="grid sm:grid-cols-2 gap-4">
@@ -39,27 +39,27 @@
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Precio (ARS, opcional)</label>
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">$</span>
-            <input name="price" type="number" min="0" placeholder="0"
+            <input name="price" type="number" min="0" value="{{ form.price or '' }}" placeholder="0"
               class="w-full pl-8 pr-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
           </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Condición</label>
           <select name="condition" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500 bg-white">
-            <option value="USADO">Usado</option>
-            <option value="NUEVO">Nuevo</option>
+            <option value="USADO" {% if form.condition == 'USADO' %}selected{% endif %}>Usado</option>
+            <option value="NUEVO" {% if form.condition == 'NUEVO' %}selected{% endif %}>Nuevo</option>
           </select>
         </div>
       </div>
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">URL de imagen</label>
-        <input name="image_url" type="url" placeholder="https://..." class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        <input name="image_url" type="url" value="{{ form.image_url or '' }}" placeholder="https://..." class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
       </div>
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Zona / barrio</label>
-        <input name="location_label" placeholder="Ej: Centro, Mar del Plata" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        <input name="location_label" value="{{ form.location_label or '' }}" placeholder="Ej: Centro, Mar del Plata" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         <button type="button" id="useGeoBtn" class="mt-2 inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium">
           {{ icon('map-pin','w-3.5 h-3.5') }} Usar mi ubicación actual
         </button>

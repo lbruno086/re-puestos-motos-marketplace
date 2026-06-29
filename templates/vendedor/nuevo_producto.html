@@ -9,9 +9,8 @@
     <h1 class="font-display text-2xl font-extrabold text-ink-900 mt-2">Publicar repuesto</h1>
   </div>
 
-  {% if error %}
-  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm flex items-center gap-2"><span class="flex-shrink-0">{{ icon('x','w-4 h-4') }}</span> {{ error }}</div>
-  {% endif %}
+  {% set errors = errors or {} %}
+  {% set form = form or {} %}
 
   <form method="post" action="/mi-cuenta/nuevo" class="space-y-6">
     {{ xsrf_form_html | safe }}
@@ -21,9 +20,9 @@
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Título *</label>
-        <input name="title" required placeholder="Ej: Kit de pistón Honda Wave 110 STD"
-          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
-        <p class="text-xs text-neutral-400 mt-1">Incluí la marca y modelo para mejor visibilidad</p>
+        <input name="title" required value="{{ form.title or '' }}" placeholder="Ej: Kit de pistón Honda Wave 110 STD"
+          class="w-full px-4 py-3 border {{ 'border-red-400' if errors.title else 'border-neutral-200' }} rounded-xl text-sm focus:border-red-500">
+        {% if errors.title %}<p class="text-xs text-red-600 mt-1">{{ errors.title }}</p>{% else %}<p class="text-xs text-neutral-400 mt-1">Incluí la marca y modelo para mejor visibilidad</p>{% endif %}
       </div>
 
       <div class="grid sm:grid-cols-2 gap-4">
@@ -34,7 +33,7 @@
             {% if c.parent_id is none %}
             <optgroup label="{{ c.name }}">
             {% else %}
-              <option value="{{ c.id }}">{{ c.name }}</option>
+              <option value="{{ c.id }}" {% if form.category_id == c.id|string %}selected{% endif %}>{{ c.name }}</option>
             {% endif %}
             {% endfor %}
           </select>
@@ -42,8 +41,8 @@
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Condición</label>
           <select name="condition" class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500 bg-white">
-            <option value="NUEVO">Nuevo</option>
-            <option value="USADO">Usado</option>
+            <option value="NUEVO" {% if form.condition == 'NUEVO' %}selected{% endif %}>Nuevo</option>
+            <option value="USADO" {% if form.condition == 'USADO' %}selected{% endif %}>Usado</option>
           </select>
         </div>
       </div>
@@ -51,7 +50,7 @@
       <div class="grid sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Marca</label>
-          <input name="brand" list="marcas-list" placeholder="Honda, Yamaha, Universal..."
+          <input name="brand" value="{{ form.brand or '' }}" list="marcas-list" placeholder="Honda, Yamaha, Universal..."
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
           <datalist id="marcas-list">
             {% for m in MARCAS_MOTO %}<option value="{{ m }}">{% endfor %}
@@ -59,28 +58,28 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Modelo</label>
-          <input name="model" placeholder="Ej: Wave 110, YBR 125"
+          <input name="model" value="{{ form.model or '' }}" placeholder="Ej: Wave 110, YBR 125"
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         </div>
       </div>
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Modelos compatibles</label>
-        <input name="compatible_models" placeholder="Honda Wave 110, Honda Biz 125, ..."
+        <input name="compatible_models" value="{{ form.compatible_models or '' }}" placeholder="Honda Wave 110, Honda Biz 125, ..."
           class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         <p class="text-xs text-neutral-400 mt-1">Separados por coma. Esto mejora las búsquedas.</p>
       </div>
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Descripción corta</label>
-        <input name="short_desc" maxlength="120" placeholder="Resumen en 1 línea"
+        <input name="short_desc" value="{{ form.short_desc or '' }}" maxlength="120" placeholder="Resumen en 1 línea"
           class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
       </div>
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Descripción completa</label>
         <textarea name="description" rows="4" placeholder="Detallá características, medidas, compatibilidad, estado..."
-          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500 resize-none"></textarea>
+          class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500 resize-none">{{ form.description or '' }}</textarea>
       </div>
     </div>
 
@@ -92,13 +91,13 @@
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Precio (ARS) *</label>
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">$</span>
-            <input name="price" type="number" min="0" required placeholder="0"
+            <input name="price" type="number" min="0" required value="{{ form.price or '' }}" placeholder="0"
               class="w-full pl-8 pr-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
           </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">Stock</label>
-          <input name="stock" type="number" min="1" value="1"
+          <input name="stock" type="number" min="1" value="{{ form.stock or '1' }}"
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         </div>
       </div>
@@ -106,12 +105,12 @@
       <div class="grid sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">N° de parte</label>
-          <input name="part_number" placeholder="Ej: RP-12345"
+          <input name="part_number" value="{{ form.part_number or '' }}" placeholder="Ej: RP-12345"
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         </div>
         <div>
           <label class="block text-sm font-medium text-ink-800 mb-1.5">URL de imagen</label>
-          <input name="image_url" type="url" placeholder="https://..."
+          <input name="image_url" type="url" value="{{ form.image_url or '' }}" placeholder="https://..."
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         </div>
       </div>

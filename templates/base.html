@@ -52,6 +52,9 @@
     .product-card{ transition:box-shadow .2s ease, border-color .2s ease, transform .2s ease; }
     .product-card:hover .card-img{ transform:scale(1.04); }
     .card-img{ transition:transform .35s cubic-bezier(.22,1,.36,1); }
+    /* Skeleton de carga para imágenes: se quita sola al disparar onload */
+    .img-skel{ background:linear-gradient(90deg,#eef0f3 25%,#e3e5e9 37%,#eef0f3 63%); background-size:400% 100%; animation:img-shimmer 1.4s ease infinite; }
+    @keyframes img-shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
     /* Form focus = anillo rojo */
     input[type=range]{ accent-color:var(--red-600); }
     select:focus, input:focus, textarea:focus{ box-shadow:0 0 0 2px rgba(224,27,36,.30); border-color:var(--red-600); outline:none; }
@@ -69,7 +72,7 @@
     #navBackdrop{ opacity:0; pointer-events:none; transition:opacity .25s ease; }
     #navBackdrop.open{ opacity:1; pointer-events:auto; }
     @media (prefers-reduced-motion: reduce){
-      .ticker-move{ animation:none; } .card-img{ transition:none; }
+      .ticker-move{ animation:none; } .card-img{ transition:none; } .img-skel{ animation:none; }
       #mobileNav, #navBackdrop{ transition:none; }
     }
   </style>

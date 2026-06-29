@@ -1,7 +1,7 @@
 {
   "app.py": {
-    "mtime": 1782744107.8016224,
-    "ast_hash": "dc9262ae68b060fbc9a0e89a7a9333f0",
+    "mtime": 1782744868.582227,
+    "ast_hash": "bb3227fdc041b65005a77ee44b660457",
     "semantic_hash": ""
   },
   "database.py": {
@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "templates/base.html": {
-    "mtime": 1782744041.0544617,
-    "ast_hash": "9e59726c86112ce8f667bd0796e74c77",
+    "mtime": 1782744483.9093642,
+    "ast_hash": "799b17ee8b3ae97a6ee337d46b3f7ca4",
     "semantic_hash": ""
   },
   "templates/busqueda.html": {
@@ -80,14 +80,14 @@
     "semantic_hash": "995b91dc8175382c093568fed16cbb7b"
   },
   "templates/catalogo.html": {
-    "mtime": 1782743319.2387085,
-    "ast_hash": "0aa92a87b3d06a87f26cf9971f18fc8f",
+    "mtime": 1782744601.3284383,
+    "ast_hash": "a4155939981600915ec3f7ab48414d48",
     "semantic_hash": ""
   },
   "templates/home.html": {
-    "mtime": 1782267293.8938668,
-    "ast_hash": "6f57f2f6d2ca702c3ac6f40123b256a4",
-    "semantic_hash": "6f57f2f6d2ca702c3ac6f40123b256a4"
+    "mtime": 1782744788.3040636,
+    "ast_hash": "d6a995bd5adf0023ad0ee22de3cb8247",
+    "semantic_hash": ""
   },
   "templates/perfil_vendedor.html": {
     "mtime": 1782267293.8958828,
@@ -95,8 +95,8 @@
     "semantic_hash": "e4daa351a5cddbfef0bc867ebdf9d759"
   },
   "templates/producto.html": {
-    "mtime": 1782743272.9406972,
-    "ast_hash": "e1a3be5d4bf010d50964a3d04936c56b",
+    "mtime": 1782744509.4449227,
+    "ast_hash": "106a1556da399ea016f16c292130bb34",
     "semantic_hash": ""
   },
   "templates/tiendas.html": {
@@ -110,9 +110,9 @@
     "semantic_hash": "522c9c701e2adae8f503c0c3b224d36e"
   },
   "templates/vendedor/editar_producto.html": {
-    "mtime": 1782267293.8999915,
-    "ast_hash": "ed1fccfa7dd39bf6b3c5f21251dd49f0",
-    "semantic_hash": "ed1fccfa7dd39bf6b3c5f21251dd49f0"
+    "mtime": 1782744425.0779972,
+    "ast_hash": "5e1283fdd14e56b7333be11956a84168",
+    "semantic_hash": ""
   },
   "templates/vendedor/leads.html": {
     "mtime": 1782267293.902025,
@@ -120,9 +120,9 @@
     "semantic_hash": "6e55e47a7809eb18fcc81cd887f60d0d"
   },
   "templates/vendedor/nuevo_producto.html": {
-    "mtime": 1782267293.902025,
-    "ast_hash": "cca181a5a8c680cda362037fdf6a8458",
-    "semantic_hash": "cca181a5a8c680cda362037fdf6a8458"
+    "mtime": 1782744425.0769217,
+    "ast_hash": "6fed4acf9474bfe7d4befe83f568fc28",
+    "semantic_hash": ""
   },
   "templates/vendedor/perfil.html": {
     "mtime": 1782267293.9050171,
@@ -180,8 +180,8 @@
     "semantic_hash": ""
   },
   "templates/servicios.html": {
-    "mtime": 1782744146.3931737,
-    "ast_hash": "06700ead76eea93147cda6e25a1f834f",
+    "mtime": 1782744541.618684,
+    "ast_hash": "d99642e66bc3bf0e67387618c8633b6d",
     "semantic_hash": ""
   },
   "templates/_cuenta_menu.html": {
@@ -190,13 +190,13 @@
     "semantic_hash": ""
   },
   "templates/cuenta/favoritos.html": {
-    "mtime": 1782743206.879172,
-    "ast_hash": "8ac8af1e536ace3e759628c0b96c849f",
+    "mtime": 1782744622.1331282,
+    "ast_hash": "94feabc1e122b51414588bed3512d236",
     "semantic_hash": ""
   },
   "templates/cuenta/historial.html": {
-    "mtime": 1782743217.1130652,
-    "ast_hash": "79170ae3856ab9aa5ac0899c891cc4e7",
+    "mtime": 1782744670.0881064,
+    "ast_hash": "31b7a239fd04180fd3670e465396796d",
     "semantic_hash": ""
   },
   "templates/cuenta/lugares.html": {
@@ -205,23 +205,28 @@
     "semantic_hash": ""
   },
   "templates/cuenta/publicaciones.html": {
-    "mtime": 1782744080.1828294,
-    "ast_hash": "8c76f81af61407b633d5d358497dc454",
+    "mtime": 1782744551.779349,
+    "ast_hash": "70be06007c6b65b9d9c31f0225db68b9",
     "semantic_hash": ""
   },
   "templates/cuenta/publicar_aviso.html": {
-    "mtime": 1782743999.1076984,
-    "ast_hash": "100b649a571b021dbfc5008129ad2467",
+    "mtime": 1782744425.0805209,
+    "ast_hash": "89add89da49f81ee4c4705a14a00e81c",
     "semantic_hash": ""
   },
   "templates/cuenta/publicar_moto.html": {
-    "mtime": 1782743970.2355287,
-    "ast_hash": "62f53c1b24d2e1ab1e0c0c3f49e95549",
+    "mtime": 1782744425.0785058,
+    "ast_hash": "d9f69e7eefded5fb907ff6d731865e84",
     "semantic_hash": ""
   },
   "templates/servicio.html": {
     "mtime": 1782744162.79021,
     "ast_hash": "4afd3a74520ba28eee29bf7919f83c3a",
+    "semantic_hash": ""
+  },
+  "templates/_product_card.html": {
+    "mtime": 1782744565.0067275,
+    "ast_hash": "505926418bd40d74ad8494153e6ff856",
     "semantic_hash": ""
   }
 }
