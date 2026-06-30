@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% from "_image_upload.html" import image_upload_field with context %}
 {% block title %}Editar Repuesto — Re-Puestos MDP{% endblock %}
 
 {% block content %}
@@ -68,6 +69,19 @@
         <p class="text-xs text-neutral-400 mt-1">Separados por coma</p>
       </div>
 
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1.5">Compatible desde el año</label>
+          <input name="compat_year_from" type="number" min="1980" max="2030" value="{{ prod.compat_year_from or '' }}"
+            class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1.5">Hasta el año</label>
+          <input name="compat_year_to" type="number" min="1980" max="2030" value="{{ prod.compat_year_to or '' }}"
+            class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        </div>
+      </div>
+
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Descripción corta</label>
         <input name="short_desc" value="{{ prod.short_desc or '' }}" maxlength="120"
@@ -105,9 +119,7 @@
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         </div>
         <div>
-          <label class="block text-sm font-medium text-ink-800 mb-1.5">URL de imagen</label>
-          <input name="image_url" type="url" value="{{ prod.image_url or '' }}"
-            class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+          {{ image_upload_field('editarProdImg', prod.image_url or '') }}
         </div>
       </div>
     </div>

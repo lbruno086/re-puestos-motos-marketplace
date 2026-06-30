@@ -348,6 +348,8 @@ def migrate_schema(conn):
     add_column_if_missing(conn, 'products', 'moto_cc', 'INTEGER')
     add_column_if_missing(conn, 'products', 'moto_km', 'INTEGER')
     add_column_if_missing(conn, 'products', 'papers_ok', 'INTEGER')
+    add_column_if_missing(conn, 'products', 'compat_year_from', 'INTEGER')
+    add_column_if_missing(conn, 'products', 'compat_year_to', 'INTEGER')
 
     add_column_if_missing(conn, 'categories', 'vertical', "TEXT DEFAULT 'REPUESTOS'")
     conn.commit()
@@ -1017,7 +1019,8 @@ def cat_img(cat_slug, idx):
 
 
 # ─── PRODUCTOS REALES DE TIENDAS MDP ─────────────────────────────────────────
-# Formato: (store_idx, cat_slug, title, brand, model, compat_list, price, desc, condition, featured)
+# Formato: (store_idx, cat_slug, title, brand, model, compat_list, price, desc, condition, featured, compat_years)
+# compat_years: (anio_desde, anio_hasta) o None si la pieza es universal / sin restriccion declarada.
 REAL_STORE_PRODUCTS = [
     # ── MDR Motos (store_idx=0) — datos reales del sitio repuestosmdrmotos.com.ar ──
     (0, 'cubiertas',
@@ -1026,7 +1029,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda XR 190', 'Honda XR 150', 'Honda XR 125'],
      135000,
      'Juego de cubiertas Tacos Camel Bridge para Honda XR 190/150/125. Par delantero y trasero. Excelente traccion en campo y ruta. Stock permanente.',
-     'NUEVO', 1),
+     'NUEVO', 1, (2014, 2024)),
 
     (0, 'cubiertas',
      'Juego Cubiertas Camel Bridge Honda Tornado 250 / XRE 300 / XTZ 250',
@@ -1034,7 +1037,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda Tornado 250', 'Honda XRE 300', 'Yamaha XTZ 250'],
      135000,
      'Juego cubiertas Tacos Camel Bridge para Tornado 250, XRE 300 y XTZ 250. Alto rendimiento off-road. Envios a todo el pais desde MDR Motos MDP.',
-     'NUEVO', 1),
+     'NUEVO', 1, (2010, 2020)),
 
     (0, 'cubiertas',
      'Cubierta Trasera 2.75-14 Motos 110cc Universal',
@@ -1042,7 +1045,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda Wave 110', 'Zanella ZB 110', 'Motomel CG 110', 'Corven Energy 110'],
      27000,
      'Cubierta trasera medida 2.75-14. Compatible con gran variedad de motos 110cc. Excelente agarre, larga duracion.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2005, 2024)),
 
     (0, 'pinones-coronas',
      'Cubre Pinon Honda XR 300L Original',
@@ -1050,7 +1053,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda XR 300L'],
      16000,
      'Cubre pinon original para Honda XR 300L. Protege el pinon delantero del barro, cadena y piedras en terreno off-road.',
-     'NUEVO', 0),
+     'NUEVO', 0, (1995, 2004)),
 
     (0, 'carroceria',
      'Kit de Proteccion Honda XR190 — Guardabarro y Laterales',
@@ -1058,7 +1061,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda XR 190'],
      114000,
      'Kit de proteccion completo para Honda XR 190. Incluye guardabarro delantero, trasero y protectores laterales del motor. Solo en MDR Motos.',
-     'NUEVO', 1),
+     'NUEVO', 1, (2014, 2024)),
 
     (0, 'tapas-carter',
      'Set Tapas Motor Honda XR 300L',
@@ -1066,7 +1069,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda XR 300L'],
      24500,
      'Set de tapas del motor para Honda XR 300L. Material de alta resistencia. Incluye juntas. Stock disponible en MDR Motos MDP.',
-     'NUEVO', 0),
+     'NUEVO', 0, (1995, 2004)),
 
     # ── Emiliozzi Motos (store_idx=1) — desde 2002, 20% descuento web ──────────
     (1, 'filtros-aceite',
@@ -1075,7 +1078,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda XR 150L', 'Honda CB 150R', 'Honda CG 150'],
      2400,
      'Filtro de aceite original OEM para Honda XR 150L. Cambio recomendado cada 3000km. 20% descuento comprando online en Emiliozzi.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2014, 2024)),
 
     (1, 'pastillas-freno',
      'Pastillas Freno EBC Delantera Honda CB 190R',
@@ -1083,7 +1086,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CB 190R', 'Honda CB 250F'],
      4800,
      'Pastillas de freno EBC para Honda CB 190R delantera. Organicas, alta friccion para uso urbano y ruta. Emiliozzi distribuidor EBC desde 2002.',
-     'NUEVO', 1),
+     'NUEVO', 1, (2018, 2024)),
 
     (1, 'amortiguadores',
      'Par Amortiguadores Yamaha XTZ 125 Traseros',
@@ -1091,7 +1094,7 @@ REAL_STORE_PRODUCTS = [
      ['Yamaha XTZ 125', 'Yamaha YBR 125'],
      12000,
      'Par de amortiguadores traseros de alta calidad para Yamaha XTZ 125. Regulables en precarga. Precio con 20% descuento web en Emiliozzi.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2007, 2016)),
 
     (1, 'filtros-aceite',
      'Aceite Motor Motul 3000 4T 10W40 — 1 Litro',
@@ -1099,7 +1102,7 @@ REAL_STORE_PRODUCTS = [
      ['Universal 4T'],
      3200,
      'Aceite motor 4 tiempos Motul 3000 10W40 mineral. 1 litro. Valido para Honda, Yamaha, Zanella y todas las marcas. Distribuidor oficial Emiliozzi MDP.',
-     'NUEVO', 0),
+     'NUEVO', 0, None),
 
     (1, 'filtros-aire',
      'Filtro Aire Original Honda CG 150 / Titan 150',
@@ -1107,7 +1110,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CG 150', 'Honda Titan 150', 'Honda Biz 125'],
      1440,
      'Filtro de aire original Honda para CG 150, Titan 150 y Biz 125. Papel de alta filtracion. Precio incluye 20% descuento web de Emiliozzi.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2004, 2016)),
 
     (1, 'cubiertas',
      'Cubierta Pirelli MT 75 140/70-17 — Distribuidor Oficial',
@@ -1115,7 +1118,7 @@ REAL_STORE_PRODUCTS = [
      ['Universal 140/70-17'],
      24000,
      'Cubierta Pirelli MT 75 140/70-17 para uso mixto asfalto/tierra. Emiliozzi es distribuidor autorizado Pirelli en Mar del Plata.',
-     'NUEVO', 1),
+     'NUEVO', 1, None),
 
     (1, 'baterias',
      'Bateria YTZ7S Sellada Honda CB 190R / CG 150',
@@ -1123,7 +1126,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CB 190R', 'Honda CG 150', 'Honda Titan 150'],
      13600,
      'Bateria YTZ7S sellada libre de mantenimiento. Compatible Honda CB 190R, CG 150, Titan 150. 20% off comprando online en Emiliozzi Motos.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2009, 2024)),
 
     (1, 'embrague',
      'Kit Embrague Completo Yamaha YBR 125',
@@ -1131,7 +1134,7 @@ REAL_STORE_PRODUCTS = [
      ['Yamaha YBR 125', 'Yamaha XTZ 125', 'Yamaha Crypton 110'],
      9600,
      'Kit completo de embrague para Yamaha YBR 125. Platos, discos y resortes de repuesto. 20% descuento web exclusivo de Emiliozzi Motos.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2005, 2024)),
 
     # ── LC Motoparts (store_idx=2) — dealer oficial Honda/Kawasaki/Yamaha/KTM ──
     (2, 'juntas-motor',
@@ -1140,7 +1143,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CB 250F', 'Honda CB 190R'],
      18500,
      'Kit completo de juntas de motor original Honda para CB 250F. Pieza OEM genuina. Solo disponible en dealers oficiales como LC Motoparts MDP.',
-     'NUEVO', 1),
+     'NUEVO', 1, (2018, 2024)),
 
     (2, 'cdi-reguladores',
      'CDI Original Honda XR 150L — Ignicion Digital',
@@ -1148,7 +1151,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda XR 150L', 'Honda CB 150R'],
      8200,
      'Modulo CDI original Honda para XR 150L. Ignicion digital. Garantia de fabrica. Exclusivo en dealers oficiales Honda, solo en LC Motoparts.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2014, 2024)),
 
     (2, 'cadenas-kits',
      'Cadena DID 428 x 110 Honda CB 190R Original',
@@ -1156,7 +1159,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CB 190R', 'Honda CB 150R', 'Honda CG 150'],
      6400,
      'Cadena original DID 428 x 110 para Honda CB 190R. Alta resistencia y larga vida util. LC Motoparts dealer oficial Honda Mar del Plata.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2014, 2024)),
 
     (2, 'baterias',
      'Bateria Original Honda Wave 110 — 12V 3Ah',
@@ -1164,7 +1167,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda Wave 110', 'Honda Biz 125'],
      9800,
      'Bateria original de fabrica Honda Wave 110. 12V 3Ah. Garantia 6 meses. Pieza genuina disponible en LC Motoparts, dealer oficial MDP.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2005, 2024)),
 
     (2, 'amortiguadores',
      'Amortiguador Trasero Original Kawasaki Z400 / Ninja 400',
@@ -1172,7 +1175,7 @@ REAL_STORE_PRODUCTS = [
      ['Kawasaki Z400', 'Kawasaki Ninja 400'],
      28000,
      'Amortiguador trasero original Kawasaki para Z400 y Ninja 400. Pieza OEM con garantia. LC Motoparts dealer oficial Kawasaki en Mar del Plata.',
-     'NUEVO', 1),
+     'NUEVO', 1, (2018, 2024)),
 
     (2, 'pastillas-freno',
      'Pastillas Freno Originales Honda CB 150R / CG 150',
@@ -1180,7 +1183,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CB 150R', 'Honda CG 150', 'Honda Titan 150'],
      3600,
      'Pastillas de freno originales Honda para CB 150R y CG 150. Calidad OEM. Stock permanente garantizado en LC Motoparts MDP.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2014, 2024)),
 
     (2, 'electrico',
      'Llave de Contacto Completa Honda CG 150 Original',
@@ -1188,7 +1191,7 @@ REAL_STORE_PRODUCTS = [
      ['Honda CG 150', 'Honda Titan 150', 'Honda Biz 125'],
      4200,
      'Llave de contacto completa original Honda para CG 150, Titan 150 y Biz 125. Incluye 2 llaves. Pieza genuina Honda, solo en dealers oficiales.',
-     'NUEVO', 0),
+     'NUEVO', 0, (2004, 2016)),
 ]
 
 
@@ -1328,24 +1331,25 @@ def init_db():
     conn.commit()
 
     # ── PRODUCTOS REALES DE TIENDAS MDP ──────────────────────────────────────
-    for j, (store_idx, cat_slug, title, brand, model, compat, price, desc, condition, featured) in enumerate(REAL_STORE_PRODUCTS):
+    for j, (store_idx, cat_slug, title, brand, model, compat, price, desc, condition, featured, compat_years) in enumerate(REAL_STORE_PRODUCTS):
         sid = seller_ids[store_idx]
         cat_id = cat_map.get(cat_slug, 1)
         slug = make_slug(title)
         price_usd = round(price / USD_RATE, 2)
         compat_json = json.dumps(compat)
+        year_from, year_to = compat_years if compat_years else (None, None)
         tags_json = json.dumps([brand or '', model or '', cat_slug])
         part_num = f"RP-{random.randint(10000,99999)}"
         rimg = cat_img(cat_slug, j + 300)
         conn.execute("""
             INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
-                price,price_usd,condition,brand,model,compatible_models,stock,
+                price,price_usd,condition,brand,model,compatible_models,compat_year_from,compat_year_to,stock,
                 status,province,city,views,leads_count,featured,part_number,
                 image_url,images,tags)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (sid, cat_id, title, slug,
              desc[:100] + '...' if len(desc) > 100 else desc, desc,
-             price, price_usd, condition, brand, model, compat_json,
+             price, price_usd, condition, brand, model, compat_json, year_from, year_to,
              random.randint(5, 30), 'ACTIVO', 'Buenos Aires', 'Mar del Plata',
              random.randint(150, 3500), random.randint(5, 120), featured, part_num,
              rimg, json.dumps([rimg]), tags_json))

@@ -46,6 +46,9 @@
           <select id="compatModel" name="compatible" class="flex-1 px-4 py-3 text-ink-900 text-sm rounded-xl bg-white" disabled>
             <option value="">Elegí la marca primero</option>
           </select>
+          <select id="compatYear" name="anio" class="flex-1 px-4 py-3 text-ink-900 text-sm rounded-xl bg-white" disabled>
+            <option value="">Año (opcional)</option>
+          </select>
           <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors whitespace-nowrap">Ver repuestos</button>
         </div>
       </form>
@@ -63,11 +66,19 @@
 <script>
   (function(){
     var brandModels = {{ brand_models | tojson }};
-    var brandSel = document.getElementById('compatBrand'), modelSel = document.getElementById('compatModel');
+    var compatYears = {{ compat_years | tojson }};
+    var brandSel = document.getElementById('compatBrand'), modelSel = document.getElementById('compatModel'), yearSel = document.getElementById('compatYear');
     if (!brandSel) return;
+
+    function resetYear(){
+      yearSel.innerHTML = '<option value="">Año (opcional)</option>';
+      yearSel.disabled = true;
+    }
+
     brandSel.addEventListener('change', function(){
       var models = brandModels[brandSel.value] || [];
       modelSel.innerHTML = '';
+      resetYear();
       if (!models.length) {
         modelSel.innerHTML = '<option value="">Sin modelos disponibles</option>';
         modelSel.disabled = true;
@@ -76,6 +87,16 @@
       modelSel.disabled = false;
       modelSel.innerHTML = '<option value="">Modelo</option>' +
         models.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
+    });
+
+    modelSel.addEventListener('change', function(){
+      resetYear();
+      var range = (compatYears[brandSel.value] || {})[modelSel.value];
+      if (!range) return;
+      var opts = ['<option value="">Año (opcional)</option>'];
+      for (var y = range[1]; y >= range[0]; y--) opts.push('<option value="' + y + '">' + y + '</option>');
+      yearSel.innerHTML = opts.join('');
+      yearSel.disabled = false;
     });
   })();
 </script>

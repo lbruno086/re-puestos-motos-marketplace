@@ -33,6 +33,14 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '').strip()
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', '').strip()
 GOOGLE_AUTH_ENABLED = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI)
 GOOGLE_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
+
+# ── Cloudinary (opcional: si no hay cloud_name, el form cae a "URL de imagen") ─
+# Unsigned upload preset: el navegador sube directo a Cloudinary, sin pasar por
+# el server ni necesitar el API secret. cloud_name y upload_preset no son
+# sensibles (se exponen igual en cualquier sitio que use Cloudinary client-side).
+CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME', '').strip()
+CLOUDINARY_UPLOAD_PRESET = os.environ.get('CLOUDINARY_UPLOAD_PRESET', '').strip()
+CLOUDINARY_ENABLED = bool(CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET)
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
 jinja_env = Environment(
@@ -87,6 +95,24 @@ def get_brand_models():
     result = {}
     for r in rows:
         result.setdefault(r['brand'], []).append(r['model'])
+    return result
+
+
+def get_compat_years():
+    """Mapa marca -> modelo -> [anio_min, anio_max] declarado por los vendedores
+    (compat_year_from/to). Solo incluye pares con datos reales; si no hay rango
+    declarado para una marca/modelo, el selector de año no se ofrece para esa
+    combinacion (evita un tercer nivel que no filtra nada de verdad)."""
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT brand, model, MIN(compat_year_from) as ymin, MAX(compat_year_to) as ymax "
+        "FROM products WHERE brand IS NOT NULL AND brand != '' AND model IS NOT NULL AND model != '' "
+        "AND compat_year_from IS NOT NULL AND compat_year_to IS NOT NULL "
+        "GROUP BY brand, model").fetchall()
+    conn.close()
+    result = {}
+    for r in rows:
+        result.setdefault(r['brand'], {})[r['model']] = [r['ymin'], r['ymax']]
     return result
 
 def haversine_km(lat1, lng1, lat2, lng2):
@@ -169,6 +195,9 @@ class BaseHandler(tornado.web.RequestHandler):
             MARCAS_MOTO=MARCAS_MOTO,
             demo_mode=DEMO_MODE,
             google_auth_enabled=GOOGLE_AUTH_ENABLED,
+            cloudinary_enabled=CLOUDINARY_ENABLED,
+            cloudinary_cloud_name=CLOUDINARY_CLOUD_NAME,
+            cloudinary_upload_preset=CLOUDINARY_UPLOAD_PRESET,
             **kwargs
         )
         if self.get_secure_cookie('flash'):
@@ -281,6 +310,7 @@ class HomeHandler(BaseHandler):
             total_products=total_products,
             total_sellers=total_sellers,
             brand_models=get_brand_models(),
+            compat_years=get_compat_years(),
         )
 
 
@@ -305,6 +335,7 @@ class CatalogoHandler(BaseHandler):
         condition = self.get_argument('condicion', '')
         brand = self.get_argument('marca', '')
         compat = self.get_argument('compatible', '')
+        compat_year = self.get_argument('anio', '')
         tienda = self.get_argument('tienda', '')
         vendedor_tipo = self.get_argument('vendedor', '')
         order = self.get_argument('orden', 'relevancia')
@@ -344,6 +375,13 @@ class CatalogoHandler(BaseHandler):
             wheres.append("p.brand=?"); params.append(brand)
         if compat:
             wheres.append("p.compatible_models LIKE ?"); params.append(f'%{compat}%')
+        if compat_year:
+            try:
+                year_int = int(compat_year)
+                wheres.append("(p.compat_year_from IS NULL OR ? BETWEEN p.compat_year_from AND p.compat_year_to)")
+                params.append(year_int)
+            except ValueError:
+                pass
         if price_min:
             try: wheres.append("p.price>=?"); params.append(float(price_min))
             except: pass
@@ -438,7 +476,7 @@ class CatalogoHandler(BaseHandler):
             current_cat=current_cat,
             total=total, page=page, total_pages=total_pages,
             search=search, condition=condition, brand=brand,
-            compat=compat, order=order, price_min=price_min, price_max=price_max,
+            compat=compat, compat_year=compat_year, order=order, price_min=price_min, price_max=price_max,
             category_slug=category_slug, tienda=tienda, vendedor_tipo=vendedor_tipo,
             brands_available=[r['brand'] for r in brands_available],
             all_cats=[dict(r) for r in all_cats],
@@ -1189,6 +1227,7 @@ class NuevoProductoHandler(BaseHandler):
 
         form = {k: self.get_argument(k, '') for k in (
             'title', 'category_id', 'condition', 'brand', 'model', 'compatible_models',
+            'compat_year_from', 'compat_year_to',
             'short_desc', 'description', 'price', 'stock', 'part_number', 'image_url')}
         title = form['title'].strip()
         if not title:
@@ -1204,12 +1243,19 @@ class NuevoProductoHandler(BaseHandler):
             f'https://picsum.photos/seed/{slug}/800/600'
         compat_raw = self.get_argument('compatible_models', '').strip()
         compat = json.dumps([x.strip() for x in compat_raw.split(',') if x.strip()])
+        try:
+            compat_year_from = int(self.get_argument('compat_year_from', '') or 0) or None
+            compat_year_to = int(self.get_argument('compat_year_to', '') or 0) or None
+        except ValueError:
+            compat_year_from, compat_year_to = None, None
+        if compat_year_from and compat_year_to and compat_year_from > compat_year_to:
+            compat_year_from, compat_year_to = compat_year_to, compat_year_from
 
         conn.execute("""
             INSERT INTO products(seller_id,category_id,title,slug,short_desc,description,
-                price,price_usd,condition,brand,model,compatible_models,stock,
+                price,price_usd,condition,brand,model,compatible_models,compat_year_from,compat_year_to,stock,
                 status,province,city,image_url,images,part_number)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (user['id'],
              int(self.get_argument('category_id', 1)),
              title, slug,
@@ -1219,7 +1265,7 @@ class NuevoProductoHandler(BaseHandler):
              self.get_argument('condition', 'NUEVO'),
              self.get_argument('brand', '').strip(),
              self.get_argument('model', '').strip(),
-             compat,
+             compat, compat_year_from, compat_year_to,
              int(self.get_argument('stock', 1) or 1),
              'ACTIVO', 'Buenos Aires', 'Mar del Plata',
              image_url, json.dumps([image_url]),
@@ -1253,10 +1299,18 @@ class EditarProductoHandler(BaseHandler):
         price = float(self.get_argument('price', 0) or 0)
         compat_raw = self.get_argument('compatible_models', '').strip()
         compat = json.dumps([x.strip() for x in compat_raw.split(',') if x.strip()])
+        try:
+            compat_year_from = int(self.get_argument('compat_year_from', '') or 0) or None
+            compat_year_to = int(self.get_argument('compat_year_to', '') or 0) or None
+        except ValueError:
+            compat_year_from, compat_year_to = None, None
+        if compat_year_from and compat_year_to and compat_year_from > compat_year_to:
+            compat_year_from, compat_year_to = compat_year_to, compat_year_from
         image_url = self.get_argument('image_url', '').strip()
         conn.execute("""
             UPDATE products SET title=?,category_id=?,short_desc=?,description=?,
                 price=?,price_usd=?,condition=?,brand=?,model=?,compatible_models=?,
+                compat_year_from=?,compat_year_to=?,
                 stock=?,image_url=?,images=?,part_number=?
             WHERE id=? AND seller_id=?""",
             (self.get_argument('title', '').strip(),
@@ -1267,7 +1321,7 @@ class EditarProductoHandler(BaseHandler):
              self.get_argument('condition', 'NUEVO'),
              self.get_argument('brand', '').strip(),
              self.get_argument('model', '').strip(),
-             compat,
+             compat, compat_year_from, compat_year_to,
              int(self.get_argument('stock', 1) or 1),
              image_url, json.dumps([image_url]),
              self.get_argument('part_number', '').strip(),

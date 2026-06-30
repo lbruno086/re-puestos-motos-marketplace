@@ -1,0 +1,32 @@
+{# Campo de imagen reutilizable: si Cloudinary esta configurado (cloudinary_enabled),
+   ofrece subir un archivo real desde el dispositivo; siempre permite pegar una URL
+   como alternativa/fallback. field_id debe ser unico por formulario.
+   Uso:  {% from "_image_upload.html" import image_upload_field %}
+         {{ image_upload_field('motoImg', form.image_url) }} #}
+{% from "_icons.html" import icon %}
+{% macro image_upload_field(field_id, current_value='') -%}
+<div>
+  <label class="block text-sm font-medium text-ink-800 mb-1.5">Foto</label>
+  {% if cloudinary_enabled %}
+  <div class="flex items-center gap-3">
+    <label for="{{ field_id }}_file" class="cursor-pointer inline-flex items-center gap-2 px-4 py-3 border border-neutral-200 hover:border-red-400 rounded-xl text-sm font-medium text-ink-700 bg-white transition-colors">
+      {{ icon('upload','w-4 h-4') }} Subir foto
+      <input type="file" id="{{ field_id }}_file" accept="image/*" class="hidden"
+        onchange="uploadImageFile(this, '{{ field_id }}', '{{ field_id }}_status', '{{ field_id }}_preview')">
+    </label>
+    <img id="{{ field_id }}_preview" src="{{ current_value }}" alt="" class="w-12 h-12 rounded-lg object-cover border border-neutral-200 {{ '' if current_value else 'hidden' }}">
+    <span id="{{ field_id }}_status" class="text-xs text-neutral-400"></span>
+  </div>
+  <input type="hidden" name="image_url" id="{{ field_id }}" value="{{ current_value }}">
+  <details class="mt-2">
+    <summary class="text-xs text-neutral-400 cursor-pointer hover:text-neutral-600">O pegar una URL en vez de subir</summary>
+    <input type="url" placeholder="https://..." value="{{ current_value }}"
+      class="w-full mt-1.5 px-4 py-2.5 border border-neutral-200 rounded-xl text-xs focus:border-red-500"
+      oninput="document.getElementById('{{ field_id }}').value=this.value; document.getElementById('{{ field_id }}_preview').src=this.value; document.getElementById('{{ field_id }}_preview').classList.remove('hidden');">
+  </details>
+  {% else %}
+  <input name="image_url" type="url" value="{{ current_value }}" placeholder="https://..."
+    class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+  {% endif %}
+</div>
+{%- endmacro %}

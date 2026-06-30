@@ -78,6 +78,8 @@ def load(csv_path: str) -> None:
                 brand   = row.get("brand", "").strip() or None
                 model   = row.get("model", "").strip() or None
                 compat  = [c.strip() for c in row.get("compatible_models", "").split(";") if c.strip()]
+                year_from = int(row["compat_year_from"]) if row.get("compat_year_from", "").strip() else None
+                year_to   = int(row["compat_year_to"]) if row.get("compat_year_to", "").strip() else None
                 cond    = row.get("condition", "NUEVO").strip().upper()
                 price   = float(row.get("price", 0) or 0)
                 feat    = int(row.get("featured", 0) or 0)
@@ -113,14 +115,14 @@ def load(csv_path: str) -> None:
                         UPDATE products SET
                             seller_id=?, category_id=?, title=?, short_desc=?, description=?,
                             price=?, price_usd=?, condition=?, brand=?, model=?,
-                            compatible_models=?, featured=?, tags=?,
+                            compatible_models=?, compat_year_from=?, compat_year_to=?, featured=?, tags=?,
                             image_url=COALESCE(NULLIF(?,''),(SELECT image_url FROM products WHERE slug=?)),
                             images=CASE WHEN ?!='' THEN ? ELSE images END
                         WHERE slug=?
                     """, (
                         seller_id, cat_id, title, short, desc,
                         price, price_usd, cond, brand, model,
-                        compat_json, feat, tags_json,
+                        compat_json, year_from, year_to, feat, tags_json,
                         image_url or "", slug,
                         image_url or "", images_json,
                         slug,
@@ -131,12 +133,14 @@ def load(csv_path: str) -> None:
                         INSERT INTO products(
                             seller_id, category_id, title, slug, short_desc, description,
                             price, price_usd, condition, brand, model, compatible_models,
+                            compat_year_from, compat_year_to,
                             stock, status, province, city, views, leads_count,
                             featured, part_number, image_url, images, tags
-                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """, (
                         seller_id, cat_id, title, slug, short, desc,
                         price, price_usd, cond, brand, model, compat_json,
+                        year_from, year_to,
                         1, "ACTIVO", "Buenos Aires", "Mar del Plata", 0, 0,
                         feat, None, image_url, images_json, tags_json,
                     ))

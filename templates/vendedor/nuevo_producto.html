@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% from "_image_upload.html" import image_upload_field with context %}
 {% block title %}Publicar Repuesto — Re-Puestos MDP{% endblock %}
 
 {% block content %}
@@ -70,6 +71,20 @@
         <p class="text-xs text-neutral-400 mt-1">Separados por coma. Esto mejora las búsquedas.</p>
       </div>
 
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1.5">Compatible desde el año</label>
+          <input name="compat_year_from" type="number" min="1980" max="2030" value="{{ form.compat_year_from or '' }}" placeholder="Ej: 2014"
+            class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-ink-800 mb-1.5">Hasta el año</label>
+          <input name="compat_year_to" type="number" min="1980" max="2030" value="{{ form.compat_year_to or '' }}" placeholder="Ej: 2024"
+            class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+        </div>
+      </div>
+      <p class="text-xs text-neutral-400 -mt-3">Opcional. Permite que el comprador filtre por año en el buscador de compatibilidad.</p>
+
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Descripción corta</label>
         <input name="short_desc" value="{{ form.short_desc or '' }}" maxlength="120" placeholder="Resumen en 1 línea"
@@ -109,9 +124,7 @@
             class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
         </div>
         <div>
-          <label class="block text-sm font-medium text-ink-800 mb-1.5">URL de imagen</label>
-          <input name="image_url" type="url" value="{{ form.image_url or '' }}" placeholder="https://..."
-            class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
+          {{ image_upload_field('nuevoProdImg', form.image_url or '') }}
         </div>
       </div>
     </div>

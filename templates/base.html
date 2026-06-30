@@ -314,6 +314,36 @@
     }).then(function(){ window.location.reload(); })
       .catch(function(){ btn.disabled = false; });
   }
+
+  {% if cloudinary_enabled %}
+  // Sube directo del navegador a Cloudinary (unsigned upload preset, sin
+  // pasar por el server ni exponer ningun secreto) y completa el input
+  // oculto image_url con la URL resultante.
+  function uploadImageFile(input, fieldId, statusId, previewId){
+    var file = input.files[0];
+    if (!file) return;
+    var status = document.getElementById(statusId);
+    var preview = document.getElementById(previewId);
+    var hidden = document.getElementById(fieldId);
+    status.textContent = 'Subiendo...';
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', '{{ cloudinary_upload_preset }}');
+    fetch('https://api.cloudinary.com/v1_1/{{ cloudinary_cloud_name }}/image/upload', { method: 'POST', body: fd })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data.secure_url) {
+          hidden.value = data.secure_url;
+          preview.src = data.secure_url;
+          preview.classList.remove('hidden');
+          status.textContent = 'Imagen subida ✓';
+        } else {
+          status.textContent = 'No se pudo subir la imagen.';
+        }
+      })
+      .catch(function(){ status.textContent = 'No se pudo subir la imagen.'; });
+  }
+  {% endif %}
 </script>
 {% block extra_scripts %}{% endblock %}
 </body>

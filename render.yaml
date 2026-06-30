@@ -1,10 +1,10 @@
 databases:
-  - name: re-puestos-db
+  - name: re-puestos-moto-marketplace-db
     plan: free
 
 services:
   - type: web
-    name: re-puestos
+    name: re-puestos-moto-marketplace
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -15,7 +15,7 @@ services:
       # cae a SQLite local automáticamente (ver db.py).
       - key: DATABASE_URL
         fromDatabase:
-          name: re-puestos-db
+          name: re-puestos-moto-marketplace-db
           property: connectionString
       - key: COOKIE_SECRET
         generateValue: true
@@ -36,3 +36,11 @@ services:
       # Apaga las credenciales demo en producción (ver Fase 0 de seguridad).
       - key: DEMO_MODE
         value: "false"
+      # Carga de imagen por archivo (Cloudinary, unsigned upload preset).
+      # cloud_name y upload_preset no son secretos (se exponen igual al navegador),
+      # pero quedan como sync:false para cargarlos manualmente en el dashboard.
+      # Mientras estén vacías, el form cae a "pegar URL de imagen".
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_UPLOAD_PRESET
+        sync: false

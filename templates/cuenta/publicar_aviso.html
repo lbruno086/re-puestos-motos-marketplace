@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
+{% from "_image_upload.html" import image_upload_field with context %}
 {% block title %}Publicar aviso — Re-Puestos MDP{% endblock %}
 
 {% block content %}
@@ -52,10 +53,7 @@
         </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-ink-800 mb-1.5">URL de imagen</label>
-        <input name="image_url" type="url" value="{{ form.image_url or '' }}" placeholder="https://..." class="w-full px-4 py-3 border border-neutral-200 rounded-xl text-sm focus:border-red-500">
-      </div>
+      {{ image_upload_field('avisoImg', form.image_url or '') }}
 
       <div>
         <label class="block text-sm font-medium text-ink-800 mb-1.5">Zona / barrio</label>
